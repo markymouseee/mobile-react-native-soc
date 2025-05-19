@@ -1,17 +1,103 @@
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { Alert, Button, StyleSheet, TextInput, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Animated,
+  Image,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View
+} from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const { login } = useAuth();
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const errorOpacity = useRef(new Animated.Value(0)).current;
+  const errorTranslateY = useRef(new Animated.Value(-10)).current;
+  const [dots, setDots] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    const dotCycle = ['.', '..', '...'];
+    let index = 0;
+
+    const interval = setInterval(() => {
+      setDots(dotCycle[index]);
+      index = (index + 1) % dotCycle.length;
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const onPressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.95,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const onPressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      friction: 3,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const triggerErrorAnimation = () => {
+    errorOpacity.setValue(0);
+    errorTranslateY.setValue(-10);
+
+    Animated.parallel([
+      Animated.timing(errorOpacity, {
+        toValue: 1,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+      Animated.timing(errorTranslateY, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
 
   const handleLogin = async () => {
+    setErrorMessage('');
+    setIsLoading(true);
+
+    if (!email) {
+      setErrorMessage('Username or email is required');
+      triggerErrorAnimation();
+      setIsLoading(false);
+      return;
+    }
+
+    if (!password) {
+      setErrorMessage('Password is required');
+      triggerErrorAnimation();
+      setIsLoading(false);
+      return;
+    }
+
+    document.getElementById('')
     try {
-      const res = await fetch('http://192.168.83.99:8000/api/login', {
+      const res = await fetch('http://172.16.1.2:8000/api/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -22,40 +108,158 @@ export default function Login() {
           password: password,
         }),
       });
-  
+
       const response = await res.json();
-  
+
       if (res.ok) {
         const token = response.token;
         const user = response.user;
-  
+
         if (typeof token !== 'string' || !user) {
-          Alert.alert('Error', response.message);
+          setErrorMessage(response.message || 'Unexpected error occurred.');
+          triggerErrorAnimation();
+          setIsLoading(false);
           return;
         }
-  
+
         await login(token, user);
+        setIsLoading(false);
         router.replace('/');
       } else {
-        Alert.alert('Error', response.message || 'Login failed. Try again.');
+        setErrorMessage(response.message || 'Login failed. Try again.');
+        triggerErrorAnimation();
+        setIsLoading(false);
       }
     } catch (err: any) {
       console.error('Login error:', err);
-      Alert.alert('Login Failed', err.message || 'An unexpected error occurred.');
+      setErrorMessage(err.message || 'An unexpected error occurred.');
+      setIsLoading(false);
+      triggerErrorAnimation();
     }
   };
-  
 
   return (
-    <View style={styles.container}>
-      <TextInput placeholder="Email" value={email} onChangeText={setEmail} style={styles.input} autoCapitalize="none" />
-      <TextInput placeholder="Password" value={password} onChangeText={setPassword} style={styles.input} secureTextEntry />
-      <Button title="Login" onPress={handleLogin} />
-    </View>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: '#0c1021' }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 40 }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View className="items-center mb-10">
+            <Image
+              source={require('../../assets/images/icon.png')}
+              className="w-32 h-32"
+              resizeMode="contain"
+            />
+          </View>
+
+          <Text className="text-4xl font-poppins text-center text-purple-500 mb-2 tracking-wide">
+            Welcome to Vibio
+          </Text>
+
+          <Text className="text-center text-green-400 mb-12 text-lg font-poppins px-8 leading-relaxed">
+            Your coding social hub.
+          </Text>
+
+          <View className="relative mb-5">
+            <View className="absolute top-4 left-4 flex-row items-center z-10">
+              <Ionicons name="at-circle-outline" size={20} color="#a7f3d0" />
+              <View className="mx-2 h-8 w-px bg-purple-600" />
+            </View>
+
+            <TextInput
+              placeholder="Username or email"
+              value={email}
+              onChangeText={(text) => {
+                setEmail(text);
+                if (errorMessage) setErrorMessage('');
+              }}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              className="bg-darkblue-light text-green-300 font-mono border border-purple-600 rounded-lg pl-20 pr-20 px-5 py-4 text-base shadow-md"
+              placeholderTextColor="#a7f3d0"
+            />
+          </View>
+
+          <View className='relative mb-5'>
+            <View className='absolute top-4 left-5 flex-row items-center z-10'>
+              <FontAwesome name="lock" size={21} color="#a7f3d0" />
+              <View className='mx-3 h-8 w-px bg-purple-600' />
+            </View>
+
+            <TextInput
+              placeholder="Password"
+              value={password}
+              onChangeText={(text) => {
+                setPassword(text);
+                if (errorMessage) setErrorMessage('');
+              }}
+              autoCapitalize='none'
+              secureTextEntry={!showPassword}
+              className="bg-darkblue-light text-green-300 font-mono border border-purple-600 rounded-lg pl-20 pr-20 px-5 py-4 text-base shadow-md"
+              placeholderTextColor="#a7f3d0"
+            />
+
+            <View className='absolute top-4 right-5 flex-row items-center z-10'>
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                <Ionicons
+                  name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                  size={21}
+                  color="#a7f3d0"
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {errorMessage ? (
+            <Animated.Text
+              style={{
+                opacity: errorOpacity,
+                transform: [{ translateY: errorTranslateY }],
+              }}
+              className="text-red-400 text-sm mb-4 text-center font-medium"
+            >
+              {errorMessage}
+            </Animated.Text>
+          ) : null}
+
+          <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+            <Pressable
+              onPress={handleLogin}
+              onPressIn={onPressIn}
+              onPressOut={onPressOut}
+              className={`bg-purple-600 rounded-lg py-4 items-center shadow-lg ${isLoading ? 'opacity-50' : ''}`}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+
+                <View className="flex-row items-center justify-center">
+                  <ActivityIndicator color="#a7f3d0" />
+                  <Text className="text-green-200 font-poppins text-lg ml-1">Signing in {dots}</Text>
+                </View>
+              ) : (
+                <View className="flex-row items-center justify-center">
+                  <Ionicons name="arrow-forward-circle-outline" size={24} color="#a7f3d0" />
+                  <Text className="text-green-200 font-poppins text-lg ml-1">Sign In</Text>
+                </View>
+              )}
+            </Pressable>
+          </Animated.View>
+
+          <Pressable
+            onPress={() => router.push('/(auth)/register')}
+            className="mt-6 items-center"
+          >
+            <Text className="text-green-400 font-poppins text-sm">
+              Don’t have an account? <Text className="text-purple-500 underline">Sign up</Text>
+            </Text>
+          </Pressable>
+        </ScrollView>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 20 },
-  input: { borderWidth: 1, padding: 10, marginBottom: 12, borderRadius: 6, borderColor: '#ccc' },
-});

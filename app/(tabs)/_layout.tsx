@@ -1,23 +1,20 @@
 import React from 'react';
-// import { Platform } from 'react-native';
 
-// import { HapticTab } from '@/components/HapticTab';
-// import { IconSymbol } from '@/components/ui/IconSymbol';
-// import TabBarBackground from '@/components/ui/TabBarBackground';
-// import { Colors } from '@/constants/Colors';
 import { Redirect, Slot } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
+import '../../global.css';
 
 export default function TabLayout() {
-  //const colorScheme = useColorScheme();
-
   const { isAuthenticated } = useAuth();
 
   if (!isAuthenticated) {
     return <Redirect href="/(auth)/login" />;
   }
-  
-  return <Slot />
+
+  return (
+    <Slot />
+  );
+
   // return (
   //   <Tabs
   //     screenOptions={{
@@ -33,9 +30,9 @@ export default function TabLayout() {
   //         default: {},
   //       }),
   //     }}>
-      
-      
-      
+
+
+
   //      <Tabs.Screen
   //       name="index"
   //       options={{
