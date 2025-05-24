@@ -93,7 +93,7 @@ export default function Register() {
         ]).start();
     };
 
-    const handleLogin = async () => {
+    const handleSubmit = async () => {
         setIsLoading(true);
 
         if (!formData.fullname || !formData.username || !formData.email || !formData.password || !formData.confirmPassword) {
@@ -108,6 +108,46 @@ export default function Register() {
             triggerErrorAnimation();
             setErrorMessage('Passwords do not match');
             return;
+        }
+
+        try {
+            const response = await fetch('http://172.16.1.2:8000/api/register-user', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: formData.fullname,
+                    username: formData.username,
+                    email: formData.email,
+                    password: formData.password,
+                    password_confirmation: formData.confirmPassword,
+                }),
+            })
+
+            const data = await response.json();
+
+            if (response.ok) {
+                setIsLoading(false);
+                setErrorMessage('BOBO KA!');
+            } else {
+                if (data.errors) {
+                    const errorMessages = Object.values(data.errors);
+                    const firstError = Array.isArray(errorMessages[0]) ? errorMessages[0][0] : errorMessages[0];
+                    setErrorMessage(firstError);
+                    triggerErrorAnimation();
+                    setIsLoading(false);
+                } else {
+                    setErrorMessage(data.message || 'An error occurred');
+                    triggerErrorAnimation();
+                    setIsLoading(false);
+                }
+            }
+        } catch (error) {
+            setErrorMessage('Network error. Please try again.' + error);
+            triggerErrorAnimation();
+            setIsLoading(false);
         }
     }
 
@@ -302,7 +342,7 @@ export default function Register() {
 
                     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
                         <Pressable
-                            onPress={handleLogin}
+                            onPress={handleSubmit}
                             onPressIn={onPressIn}
                             onPressOut={onPressOut}
                             className={`bg-purple-600 rounded-lg py-4 items-center shadow-lg ${isLoading ? 'opacity-50' : ''}`}

@@ -1,5 +1,6 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { Checkbox } from 'expo-checkbox';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -15,8 +16,9 @@ import {
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  View
+  View,
 } from 'react-native';
+import { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function Login() {
@@ -31,6 +33,31 @@ export default function Login() {
   const errorTranslateY = useRef(new Animated.Value(-10)).current;
   const [dots, setDots] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState<boolean>(false);
+
+  const checkboxScale = useSharedValue(1);
+  const checkboxAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: checkboxScale.value }],
+  }));
+
+  const linkOpacity = useSharedValue(1);
+  const linkAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: linkOpacity.value,
+  }));
+
+  const handleCheckboxToggle = () => {
+    checkboxScale.value = withSpring(1.2, {}, () => {
+      checkboxScale.value = withSpring(1);
+    });
+    setRememberMe((prev) => !prev);
+  };
+
+  const handleForgotPassword = () => {
+    linkOpacity.value = withSpring(0.5, {}, () => {
+      linkOpacity.value = withSpring(1);
+    });
+    router.push('/(auth)/ConfirmEmail');
+  };
 
   useEffect(() => {
     const dotCycle = ['.', '..', '...'];
@@ -95,7 +122,6 @@ export default function Login() {
       return;
     }
 
-    document.getElementById('')
     try {
       const res = await fetch('http://172.16.1.2:8000/api/login', {
         method: 'POST',
@@ -185,7 +211,7 @@ export default function Login() {
             />
           </View>
 
-          <View className='relative mb-5'>
+          <View className='relative mb-4'>
             <View className='absolute top-4 left-5 flex-row items-center z-10'>
               <FontAwesome name="lock" size={21} color="#a7f3d0" />
               <View className='mx-3 h-8 w-px bg-purple-600' />
@@ -213,6 +239,24 @@ export default function Login() {
                 />
               </TouchableOpacity>
             </View>
+          </View>
+
+          <View className="flex-row items-center justify-between mb-4 px-1">
+            <Animated.View className="flex-row items-center" style={checkboxAnimatedStyle}>
+              <Checkbox
+                value={rememberMe}
+                onValueChange={handleCheckboxToggle}
+                color={rememberMe ? '#8d03f2' : undefined}
+                className="bg-darkblue-light border border-purple-600 rounded-lg"
+              />
+              <Text className="text-green-400 font-poppins text-sm ml-2">Remember me</Text>
+            </Animated.View>
+
+            <Animated.View style={linkAnimatedStyle}>
+              <Pressable onPress={handleForgotPassword}>
+                <Text className="text-purple-500 underline font-poppins text-sm">Forgot Password?</Text>
+              </Pressable>
+            </Animated.View>
           </View>
 
           {errorMessage ? (
@@ -249,6 +293,8 @@ export default function Login() {
               )}
             </Pressable>
           </Animated.View>
+
+
 
           <Pressable
             onPress={() => router.push('/(auth)/register')}
