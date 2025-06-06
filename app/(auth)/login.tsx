@@ -1,3 +1,4 @@
+import { BASE_URL } from '@/api/url';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Checkbox } from 'expo-checkbox';
@@ -123,14 +124,14 @@ export default function Login() {
     }
 
     try {
-      const res = await fetch('http://172.16.1.2:8000/api/login', {
+      const res = await fetch(`${BASE_URL}/api/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
+          'Accept': 'application/json',
+        },  
         body: JSON.stringify({
-          usernameoremail: email,
+          username_or_email: email,
           password: password,
         }),
       });
@@ -150,7 +151,7 @@ export default function Login() {
 
         await login(token, user);
         setIsLoading(false);
-        router.replace('/');
+        router.replace('/(tabs)/AppNavigator');
       } else {
         setErrorMessage(response.message || 'Login failed. Try again.');
         triggerErrorAnimation();
@@ -178,7 +179,7 @@ export default function Login() {
           <View className="items-center mb-10">
             <Image
               source={require('../../assets/images/icon.png')}
-              className="w-32 h-32"
+              className="w-32 h-32" 
               resizeMode="contain"
             />
           </View>

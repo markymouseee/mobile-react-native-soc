@@ -1,75 +1,126 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { FontAwesome } from '@expo/vector-icons';
+import React, { useState } from 'react';
+import {
+  FlatList,
+  Image,
+  Keyboard,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  Text,
+  TextInput,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+const posts = [
+  {
+    id: '1',
+    user: 'John Doe',
+    title: 'Workout Complete 💪',
+    body: 'Feeling great after a morning session!',
+    image: 'https://via.placeholder.com/350x200.png?text=Workout+Selfie',
+  },
+  {
+    id: '2',
+    user: 'Jane Smith',
+    title: 'Nature Walk 🌳',
+    body: 'Peaceful moments on today’s walk.',
+    image: 'https://www.plt.org/wp-content/uploads/2018/03/nature-walk-activities.jpg',
+  },
+];
 
 export default function HomeScreen() {
+  const [likedPosts, setLikedPosts] = useState<string[]>([]);
+  const [commentModal, setCommentModal] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<any>(null);
+  const [comment, setComment] = useState('');
+
+  const toggleLike = (postId: string) => {
+    setLikedPosts((prev) =>
+      prev.includes(postId) ? prev.filter((id) => id !== postId) : [...prev, postId]
+    );
+  };
+
+  const openCommentModal = (post: any) => {
+    setSelectedPost(post);
+    setCommentModal(true);
+  };
+
+  const renderPost = ({ item }: { item: typeof posts[0] }) => (
+    <View className="bg-[#1a1d2e] rounded-xl p-4 mb-5">
+      <Text className="text-white font-bold text-lg mb-1">{item.user}</Text>
+      <Text className="text-gray-300 mb-2">{item.title}</Text>
+      <Text className="text-gray-400">{item.body}</Text>
+      {item.image && (
+        <View className="my-3 rounded-xl overflow-hidden border border-[#2e2f45]">
+          <Image source={{ uri: item.image }} className="w-full h-44" resizeMode="cover" />
+        </View>
+      )}
+      <View className="flex-row items-center justify-start space-x-6 mt-2">
+        <Pressable onPress={() => toggleLike(item.id)}>
+          <FontAwesome
+            name="heart"
+            size={22}
+            color={likedPosts.includes(item.id) ? '#e11d48' : '#9ca3af'}
+          />
+        </Pressable>
+        <Pressable onPress={() => openCommentModal(item)}>
+          <FontAwesome name="comment" size={20} color="#9ca3af" />
+        </Pressable>
+      </View>
+    </View>
+  );
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: '#0c1021' }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View className="flex-1 px-5 pt-10">
+          <FlatList
+            data={posts}
+            keyExtractor={(item) => item.id}
+            renderItem={renderPost}
+            showsVerticalScrollIndicator={false}
+          />
+
+          {/* Comment Modal */}
+          <Modal visible={commentModal} animationType="slide" transparent>
+            <View className="flex-1 justify-end bg-black/40">
+              <View className="bg-[#1a1d2e] p-5 rounded-t-2xl">
+                <Text className="text-white text-base mb-3 font-semibold">
+                  Comment on {selectedPost?.user}s post
+                </Text>
+                <TextInput
+                  placeholder="Write a comment..."
+                  placeholderTextColor="#888"
+                  className="bg-[#2a2e3e] text-white p-3 rounded-lg mb-4"
+                  value={comment}
+                  onChangeText={setComment}
+                  multiline
+                />
+                <View className="flex-row justify-between">
+                  <Pressable onPress={() => setCommentModal(false)}>
+                    <Text className="text-red-400 font-semibold">Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      // Simulate sending comment
+                      setComment('');
+                      setCommentModal(false);
+                    }}
+                  >
+                    <Text className="text-purple-400 font-semibold">Send</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          </Modal>
+        </View>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
-});

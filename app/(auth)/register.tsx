@@ -17,11 +17,12 @@ import {
     View,
 } from "react-native";
 
+import { BASE_URL } from "@/api/url";
 import TermsPrivacyModal from "@/components/TermsPrivacyModal";
 import { router } from "expo-router";
 
 interface RegisterProps {
-    fullname: string;
+    fullname: any;
     username: string;
     email: string;
     password: string;
@@ -111,7 +112,7 @@ export default function Register() {
         }
 
         try {
-            const response = await fetch('http://172.16.1.2:8000/api/register-user', {
+            const response = await fetch(`${BASE_URL}/api/register-user`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
