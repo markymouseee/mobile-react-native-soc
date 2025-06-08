@@ -1,9 +1,9 @@
-import { Feather, FontAwesome } from "@expo/vector-icons";
+import UploadModal from "@/components/UploadModal";
+import { Feather, FontAwesome, Ionicons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import React from "react";
-import { Text, TouchableOpacity, View } from "react-native";
-
-// Screens
+import React, { useState } from "react";
+import { Pressable, Text, TouchableOpacity, View } from "react-native";
+import Profile from "../screens/_profile";
 import HomeScreen from "./index";
 
 const Tab = createBottomTabNavigator();
@@ -17,35 +17,51 @@ function ExploreScreen() {
   );
 }
 
-function UploadScreen() {
-  return (
-    <View className="flex-1 justify-center items-center bg-[#0c1021]">
-      <Text className="text-white text-lg">Upload Post</Text>
-    </View>
-  );
-}
-
-function ProfileScreen() {
-  return (
-    <View className="flex-1 justify-center items-center bg-[#0c1021]">
-      <Text className="text-white text-lg">Profile Screen</Text>
-    </View>
-  );
-}
-
 const CustomHeader = () => (
   <View className="bg-[#0c1021] pt-5 px-4 pb-2 border-b border-[#1a1d2e] flex-row items-center justify-between">
     <View className="flex-row items-center space-x-2">
       <Text
         className="text-white text-4xl tracking-wide ml-2"
-        style={{ fontFamily: "Pacifico-Regular" }} // iOS
+        style={{ fontFamily: "Pacifico-Regular" }}
       >
         Vibio
       </Text>
     </View>
-    <FontAwesome name="send" size={25} color="white" />
+
+    {/* Top Bar */}
+    <View className="ms-auto mt-3 flex-row gap-2">
+      <FontAwesome name="send" size={25} color="white" />
+      <Pressable onPress={() => console.log("Settings Pressed")}>
+        <Ionicons name="settings-outline" size={25} color="white" />
+      </Pressable>
+    </View>
   </View>
 );
+
+const UploadTabBarButton = (props: any) => {
+  const [modalVisible, setModalVisible] = useState<boolean>(false);
+  return (
+    <>
+      <TouchableOpacity
+        {...props}
+        onPress={() => setModalVisible((prev) => !prev)}
+        style={{
+          width: 60,
+          height: 60,
+          backgroundColor: "#8d03f2",
+          borderRadius: 30,
+          justifyContent: "center",
+          alignItems: "center",
+          marginBottom: 40,
+        }}
+      >
+        <Feather name={modalVisible ? "x" : "plus"} size={26} color="#fff" />
+      </TouchableOpacity>
+
+      <UploadModal modalVisible={modalVisible} setModalVisible={setModalVisible} />
+    </>
+  );
+};
 
 export default function AppNavigator() {
   return (
@@ -78,30 +94,16 @@ export default function AppNavigator() {
           ),
         }}
       />
-
       <Tab.Screen
         name="Upload"
-        component={UploadScreen}
+        component={() => null}
         options={{
           tabBarLabel: "",
-          tabBarIcon: ({ focused }) => (
-            <View
-              style={{
-                width: 60,
-                height: 60,
-                backgroundColor: "#8d03f2",
-                borderRadius: 30,
-                justifyContent: "center",
-                alignItems: "center",
-                marginBottom: 40,
-              }}
-            >
-              <Feather name="plus" size={26} color="#fff" />
-            </View>
-          ),
-          tabBarButton: (props) => <TouchableOpacity {...props} />,
+          tabBarIcon: () => null,
+          tabBarButton: () => <UploadTabBarButton />
         }}
       />
+
 
       <Tab.Screen
         name="Notifications"
@@ -119,7 +121,7 @@ export default function AppNavigator() {
 
       <Tab.Screen
         name="Profile"
-        component={ProfileScreen}
+        component={Profile}
         options={{
           tabBarIcon: ({ color, size }) => (
             <FontAwesome name="user" color={color} size={size} />
