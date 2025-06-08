@@ -1,24 +1,34 @@
 import { Poppins_400Regular, Poppins_700Bold, useFonts } from '@expo-google-fonts/poppins';
+import * as Font from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { AuthProvider } from '../contexts/AuthContext';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
+
+  const [fontsLoad] = useFonts({
     Poppins_400Regular,
     Poppins_700Bold,
   });
 
+    const [fontsLoaded, setFontsLoaded] = useState(false);
+
   useEffect(() => {
-    if (fontsLoaded) {
+    Font.loadAsync({
+      'Pacifico-Regular': require('../assets/fonts/Pacifico-Regular.ttf'),
+    }).then(() => setFontsLoaded(true));
+  }, []);
+
+  useEffect(() => {
+    if (fontsLoad) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded]);
+  }, [fontsLoad]);
 
   if (!fontsLoaded) return null;
 

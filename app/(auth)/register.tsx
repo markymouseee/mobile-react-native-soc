@@ -22,7 +22,7 @@ import TermsPrivacyModal from "@/components/TermsPrivacyModal";
 import { router } from "expo-router";
 
 interface RegisterProps {
-    fullname: any;
+    fullname: string;
     username: string;
     email: string;
     password: string;
@@ -131,7 +131,7 @@ export default function Register() {
 
             if (response.ok) {
                 setIsLoading(false);
-                setErrorMessage('BOBO KA!');
+
             } else {
                 if (data.errors) {
                     const errorMessages = Object.values(data.errors);
