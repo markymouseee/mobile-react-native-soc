@@ -23,7 +23,6 @@ import { router } from "expo-router";
 
 interface RegisterProps {
     fullname: string;
-    username: string;
     email: string;
     password: string;
     confirmPassword: string;
@@ -32,7 +31,6 @@ interface RegisterProps {
 export default function Register() {
     const [formData, setFormData] = useState<RegisterProps>({
         fullname: '',
-        username: '',
         email: '',
         password: '',
         confirmPassword: ''
@@ -97,7 +95,7 @@ export default function Register() {
     const handleSubmit = async () => {
         setIsLoading(true);
 
-        if (!formData.fullname || !formData.username || !formData.email || !formData.password || !formData.confirmPassword) {
+        if (!formData.fullname || !formData.email || !formData.password || !formData.confirmPassword) {
             setIsLoading(false);
             triggerErrorAnimation();
             setErrorMessage('All fields are required');
@@ -120,7 +118,6 @@ export default function Register() {
                 },
                 body: JSON.stringify({
                     name: formData.fullname,
-                    username: formData.username,
                     email: formData.email,
                     password: formData.password,
                     password_confirmation: formData.confirmPassword,
@@ -130,8 +127,31 @@ export default function Register() {
             const data = await response.json();
 
             if (response.ok) {
-                setIsLoading(false);
+                const user = data.user;
 
+                setIsLoading(false);
+                try {
+                    const confirmEmailResponse = await fetch(`${BASE_URL}/api/request-confirm-email`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            user: user
+                        })
+                    })
+
+                    const dataRes = await confirmEmailResponse.json();
+
+                    if (confirmEmailResponse.ok) {
+                        router.push('/(auth)/ConfirmEmail');
+                    } else {
+                        console.error(dataRes);
+                    }
+                } catch (error) {
+                    console.error(error);
+                }
             } else {
                 if (data.errors) {
                     const errorMessages = Object.values(data.errors);
@@ -186,7 +206,7 @@ export default function Register() {
                         </View>
 
                         <TextInput
-                            placeholder="Fullname"
+                            placeholder="Name"
                             placeholderTextColor="#a7f3d0"
                             keyboardType="default"
                             className="bg-darkblue-light text-green-300 font-mono border border-purple-600 rounded-lg pl-20 pr-20 px-5 py-4 text-base shadow-md"
@@ -195,25 +215,6 @@ export default function Register() {
                                 if (errorMessage) setErrorMessage('');
                             }}
                             value={formData.fullname}
-                        />
-                    </View>
-
-                    <View className="relative mb-5">
-                        <View className="absolute top-4 left-4 flex-row items-center z-10">
-                            <Ionicons name="at-circle-outline" size={20} color="#a7f3d0" />
-                            <View className="mx-2 h-8 w-px bg-purple-600" />
-                        </View>
-
-                        <TextInput
-                            placeholder="Username"
-                            placeholderTextColor="#a7f3d0"
-                            autoCapitalize="none"
-                            className="bg-darkblue-light text-green-300 font-mono border border-purple-600 rounded-lg pl-20 pr-20 px-5 py-4 text-base shadow-md"
-                            onChange={(e) => {
-                                setFormData({ ...formData, username: e.nativeEvent.text });
-                                if (errorMessage) setErrorMessage('');
-                            }}
-                            value={formData.username}
                         />
                     </View>
 
@@ -267,7 +268,7 @@ export default function Register() {
                         </View>
                     </View>
 
-                    <View className="relative mb-5">
+                    <View className="relative">
                         <View className="absolute top-4 left-4 flex-row items-center z-10">
                             <Ionicons name="lock-closed-outline" size={20} color="#a7f3d0" />
                             <View className="mx-2 h-8 w-px bg-purple-600" />
@@ -297,8 +298,8 @@ export default function Register() {
                         </View>
                     </View>
 
-                    <View className="flex-1 justify-center items-center px-4 ">
-                        <Text className="text-green-200 text-center text-sm mb-2">
+                    <View className="flex-row justify-center items-center py-4">
+                        <Text className="text-green-200 text-center text-sm">
                             By continuing, you agree to our{' '}
                             <Text
                                 className="text-purple-400 underline"
@@ -335,7 +336,7 @@ export default function Register() {
                                 opacity: errorOpacity,
                                 transform: [{ translateY: errorTranslateY }],
                             }}
-                            className="text-red-400 text-sm mb-4 text-center font-medium"
+                            className="text-red-400 text-sm text-center font-medium"
                         >
                             {errorMessage}
                         </Animated.Text>

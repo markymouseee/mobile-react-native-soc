@@ -1,6 +1,9 @@
 import { BASE_URL } from "@/api/url";
 import { Feather, FontAwesome, Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
+import dayjs from 'dayjs';
+import localizedFormat from 'dayjs/plugin/localizedFormat';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import React, { useCallback, useEffect, useState } from "react";
 import {
   BackHandler,
   FlatList,
@@ -10,6 +13,7 @@ import {
   Modal,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   TextInput,
@@ -17,38 +21,31 @@ import {
   View
 } from "react-native";
 
-// const posts = [
-//   {
-//     id: "1",
-//     user: "John Doe",
-//     profile:
-//       "https://images.pexels.com/photos/14653174/pexels-photo-14653174.jpeg",
-//     title: "Workout Complete 💪",
-//     body: "Feeling great after a morning session!",
-//     image:
-//       "https://images.theconversation.com/files/638815/original/file-20241216-15-zor5sz.jpg?ixlib=rb-4.1.0&rect=7%2C0%2C5141%2C3149&q=20&auto=format&w=320&fit=clip&dpr=2&usm=12&cs=strip",
-//     likes: 20,
-//     comments: [
-//       { id: 1, user: "John", text: "Nice post!" },
-//       { id: 2, user: "Anna", text: "Awesome 🎉" },
-//     ],
-//   },
-//   {
-//     id: "2",
-//     user: "Jane Smith",
-//     profile:
-//       "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS6Hb5xzFZJCTW4cMqmPwsgfw-gILUV7QevvQ&s",
-//     title: "Nature Walk 🌳",
-//     body: "Peaceful moments on today’s walk.",
-//     image:
-//       "https://www.plt.org/wp-content/uploads/2018/03/nature-walk-activities.jpg",
-//     likes: 20,
-//     comments: [
-//       { id: 1, user: "John", text: "Nice post!" },
-//       { id: 2, user: "Anna", text: "Awesome 🎉" },
-//     ],
-//   },
-// ];
+dayjs.extend(relativeTime);
+dayjs.extend(localizedFormat);
+
+const getFormattedTime = (timestamp: any) => {
+  const now = dayjs();
+  const created = dayjs(timestamp);
+
+  const diffInHours = now.diff(created, 'hour');
+
+  if (diffInHours < 1) {
+    const diffInMinutes = now.diff(created, 'minute');
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes === 1) return '1 minute ago';
+    return `${diffInMinutes} minutes ago`;
+  }
+
+  if (diffInHours < 24) {
+    if (diffInHours === 1) return '1 hour ago';
+    return `${diffInHours} hours ago`;
+  }
+
+  if (diffInHours < 48) return 'yesterday';
+  return created.format('MMMM DD, YYYY [at] h:mm a');
+};
+
 
 type PostProps = {
   id: number;
@@ -61,6 +58,7 @@ type PostProps = {
   image: string;
   likes: number;
   comments: { id: number; user: string; text: string }[];
+  created_at: string;
 }
 
 export default function HomeScreen() {
@@ -69,6 +67,7 @@ export default function HomeScreen() {
   const [selectedPost, setSelectedPost] = useState<any>(null);
   const [comment, setComment] = useState("");
   const [posts, setPosts] = useState<PostProps[]>([])
+  const [refreshing, setRefreshing] = useState<boolean>(false);
 
   const toggleLike = (postId: string) => {
     setLikedPosts((prev) =>
@@ -83,27 +82,37 @@ export default function HomeScreen() {
     setCommentModal(true);
   };
 
-  useEffect(() => {
+  const fetchPosts = async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/show-posts`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+      const data = await response.json();
 
-    const fetchPosts = async () => {
-      try {
-        const response = await fetch(`${BASE_URL}/api/show-posts`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          }
-        });
-        const data = await response.json();
-        setPosts(data);
-      } catch (error) {
-        console.error("Fetch error:", error);
-      }
-    };
-    fetchPosts();
+      const shuffled = data.sort(() => Math.random() - 0.5);
+
+      setPosts(shuffled);
+    } catch (error) {
+      console.error("Fetch error:", error);
+    }
+  };
+
+  const onRefresh = useCallback(async () => {
+    await fetchPosts();
+
+    setRefreshing(true);
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 2000)
   }, []);
 
-
+  useEffect(() => {
+    fetchPosts();
+  }, []);
 
   useEffect(() => {
     const backAction = () => {
@@ -126,13 +135,18 @@ export default function HomeScreen() {
           source={{ uri: item.users.profile_picture || "https://scontent.fcgy1-1.fna.fbcdn.net/v/t39.30808-6/499154638_703361578724799_6308952919668520827_n.jpg?_nc_cat=106&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeH2S_Be7dpVyFLSOpmy3A_tw0UrV9H3N0fDRStX0fc3RwIbLyHR9-5sCsuDUHycTffKCbiM11gk0zEFyBADMvr2&_nc_ohc=FoDgx9xoFwsQ7kNvwHSjYnk&_nc_oc=AdkhpGUpXHd9Z0Tc0Ue34_REAwKI4DOSC_EPUTZJwmw7wCvVPWPbmDE7L3ZrNnWAPfHO_UOdulUKrZRnn_X6QqHY&_nc_zt=23&_nc_ht=scontent.fcgy1-1.fna&_nc_gid=WXMAX7lpv2gL-2t9GQ1cKg&oh=00_AfMFeNhE1VjY3DGqZD9qt_yBrSt5dH7G_Hijs13RGYSKOw&oe=684B85A2" }}
           className="w-10 h-10 rounded-full mr-2"
         />
-        <Text className="text-white font-semibold text-base">{item.users.name}</Text>
+        <View>
+          <Text className="text-white font-semibold text-base">{item.users.name}</Text>
+          <Text className="text-[#9ca3af] text-xs">
+            {getFormattedTime(item.created_at)}
+          </Text>
+        </View>
         <View className="ms-auto">
           <FontAwesome name="ellipsis-h" size={18} color="#9ca3af" />
         </View>
       </View>
 
-      <Text className="text-white mb-2 font-medium text-base">
+      <Text className="text-white mb-2 font-medium text-base mt-3">
         {item.title}
       </Text>
       <Text className="text-gray-400 text-sm mb-2 leading-5">{item.body}</Text>
@@ -192,6 +206,13 @@ export default function HomeScreen() {
             justifyContent: "center",
           }}
           keyboardShouldPersistTaps="handled"
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#fff"
+            />
+          }
         >
           <View className="flex-1 px-5 pt-10">
             <FlatList

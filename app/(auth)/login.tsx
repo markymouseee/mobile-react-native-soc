@@ -129,7 +129,7 @@ export default function Login() {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-        },  
+        },
         body: JSON.stringify({
           username_or_email: email,
           password: password,
@@ -138,21 +138,37 @@ export default function Login() {
 
       const response = await res.json();
 
-      if (res.ok) {
+      if (response.status === 'success') {
         const token = response.token;
         const user = response.user;
-
-        if (typeof token !== 'string' || !user) {
-          setErrorMessage(response.message || 'Unexpected error occurred.');
-          triggerErrorAnimation();
-          setIsLoading(false);
-          return;
-        }
 
         await login(token, user);
         setIsLoading(false);
         router.replace('/(tabs)/AppNavigator');
       } else {
+        setIsLoading(false);
+        try {
+          const confirmEmailResponse = await fetch(`${BASE_URL}/api/request-confirm-email`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+              user: response.user
+            })
+          })
+
+          const dataRes = await confirmEmailResponse.json();
+
+          if (confirmEmailResponse.ok) {
+            router.push('/(auth)/ConfirmEmail');
+          } else {
+            console.error(dataRes);
+          }
+        } catch (error) {
+          console.error(error);
+        }
         setErrorMessage(response.message || 'Login failed. Try again.');
         triggerErrorAnimation();
         setIsLoading(false);
@@ -179,7 +195,7 @@ export default function Login() {
           <View className="items-center mb-10">
             <Image
               source={require('../../assets/images/icon.png')}
-              className="w-32 h-32" 
+              className="w-32 h-32"
               resizeMode="contain"
             />
           </View>
@@ -206,7 +222,7 @@ export default function Login() {
                 if (errorMessage) setErrorMessage('');
               }}
               autoCapitalize="none"
-              keyboardType="email-address"
+              keyboardType='default'
               className="bg-darkblue-light text-green-300 font-mono border border-purple-600 rounded-lg pl-20 pr-20 px-5 py-4 text-base shadow-md"
               placeholderTextColor="#a7f3d0"
             />

@@ -1,4 +1,7 @@
+import { BASE_URL } from "@/api/url";
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useRef, useState } from "react";
 import {
     ActivityIndicator,
@@ -12,10 +15,10 @@ import {
     TouchableWithoutFeedback,
     View
 } from "react-native";
+import { useAuth } from '../../contexts/AuthContext';
 
 interface Props {
     code: number;
-    email: string;
 }
 
 export default function ConfirmEmail() {
@@ -28,8 +31,61 @@ export default function ConfirmEmail() {
     const [dots, setDots] = useState<string>('');
     const [formData, setFormData] = useState<Props>({
         code: 0,
-        email: ''
     });
+
+    const { logout, login } = useAuth();
+
+    const [user, setUser] = useState<any>(null);
+
+    const handleConfirm = async () => {
+        setIsLoading(true);
+
+        if (formData.code === 0 || formData.code === undefined) {
+            setErrorMessage('Please enter a valid confirmation code.');
+            setIsLoading(false);
+            triggerErrorAnimation();
+            return;
+        }
+
+        try {
+            const response = await fetch(`${BASE_URL}/api/confirm-email`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    code: formData.code,
+                    email: user.email
+                })
+            })
+
+            const data = await response.json();
+
+            if (response.ok) {
+                setIsLoading(false)
+                await login(data.token, data.user)
+                router.push('/(tabs)/AppNavigator');
+            } else {
+                console.log(data)
+                setIsLoading(false);
+            }
+        } catch (error) {
+            console.error("Something went wrong! ", error)
+        }
+    }
+
+    useEffect(() => {
+        const loadUserData = async () => {
+            const userDataString = await SecureStore.getItemAsync("userData");
+            if (userDataString) {
+                const parsed = JSON.parse(userDataString);
+                setUser(parsed);
+            }
+        };
+        loadUserData();
+    }, []);
+
 
     useEffect(() => {
         const dotCycle = ['.', '..', '...'];
@@ -92,15 +148,9 @@ export default function ConfirmEmail() {
     };
 
 
-    const handleSubmit = async () => {
-        setIsLoading(true);
-
-        if (formData.code === 0 || formData.code === undefined) {
-            setErrorMessage('Please enter a valid confirmation code.');
-            setIsLoading(false);
-            triggerErrorAnimation();
-            return;
-        }
+    const handleLogout = async () => {
+        await logout();
+        router.push('/login');
     }
 
     return (
@@ -118,7 +168,7 @@ export default function ConfirmEmail() {
                         <Pressable className="flex-row items-center gap-1"
                             onPressIn={onPressLogoutIn}
                             onPressOut={onPressLogoutOut}
-                            onPress={() => { }}
+                            onPress={() => { handleLogout() }}
                         >
                             <FontAwesome name="sign-out" size={18} color="#a7f3d0" />
                             <Text className="text-green-300 font-extrabold text-base">
@@ -140,7 +190,7 @@ export default function ConfirmEmail() {
                     </Text>
 
                     <Text className="text-green-300 font-poppins mb-5 text-sm text-center leading-relaxed">
-                        We have sent a confirmation code to your registered email address. Please check your inbox and click on the link to verify your account.
+                        We have sent a confirmation code to your registered email address {user.email}. Please check your inbox to copy the 6 digits code.
                         If you don’t see the email, please check your spam or junk folder.
                         If you still haven’t received it, you can request a new confirmation email.
                     </Text>
@@ -155,6 +205,7 @@ export default function ConfirmEmail() {
                             placeholder="Enter the 6-digit code"
                             placeholderTextColor="#a7f3d0"
                             keyboardType="number-pad"
+                            maxLength={6}
                             onChange={(e) => {
                                 setFormData({ ...formData, code: parseInt(e.nativeEvent.text) })
                                 if (errorMessage) setErrorMessage('');
@@ -177,7 +228,7 @@ export default function ConfirmEmail() {
 
                     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
                         <Pressable
-                            onPress={handleSubmit}
+                            onPress={handleConfirm}
                             onPressIn={onPressIn}
                             onPressOut={onPressOut}
                             className={`bg-purple-600 rounded-lg py-4 items-center shadow-lg ${isLoading ? 'opacity-50' : ''}`}
