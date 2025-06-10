@@ -1,4 +1,5 @@
 import { BASE_URL } from "@/api/url";
+import { useAuth } from "@/contexts/AuthContext";
 import * as SecureStore from "expo-secure-store";
 import React, { useCallback, useEffect, useState } from "react";
 import {
@@ -15,6 +16,10 @@ import {
     TouchableWithoutFeedback,
     View,
 } from "react-native";
+
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../TypeScript/types';
 
 const { width } = Dimensions.get("window");
 const imageSize = width / 3;
@@ -66,6 +71,10 @@ export default function Profile() {
         posts: [],
         followers: []
     });
+
+
+    const { logout, login } = useAuth();
+    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
 
     useEffect(() => {
@@ -125,6 +134,14 @@ export default function Profile() {
         );
     }
 
+    const handleEditProfile = async () => {
+        await logout();
+        navigation.reset({
+            index: 0,
+            routes: [{ name: 'Login' }],
+        })
+    }
+
     return (
         <KeyboardAvoidingView
             style={{ flex: 1, backgroundColor: "#0c1021" }}
@@ -136,7 +153,7 @@ export default function Profile() {
                         <View className="flex-row items-center justify-between">
 
                             <Image
-                                source={{ uri: currentUserProfile.profile_picture || "https://scontent.fcgy1-1.fna.fbcdn.net/v/t39.30808-6/499154638_703361578724799_6308952919668520827_n.jpg?_nc_cat=106&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeH2S_Be7dpVyFLSOpmy3A_tw0UrV9H3N0fDRStX0fc3RwIbLyHR9-5sCsuDUHycTffKCbiM11gk0zEFyBADMvr2&_nc_ohc=FoDgx9xoFwsQ7kNvwHSjYnk&_nc_oc=AdkhpGUpXHd9Z0Tc0Ue34_REAwKI4DOSC_EPUTZJwmw7wCvVPWPbmDE7L3ZrNnWAPfHO_UOdulUKrZRnn_X6QqHY&_nc_zt=23&_nc_ht=scontent.fcgy1-1.fna&_nc_gid=WXMAX7lpv2gL-2t9GQ1cKg&oh=00_AfMFeNhE1VjY3DGqZD9qt_yBrSt5dH7G_Hijs13RGYSKOw&oe=684B85A2" }}
+                                source={{ uri: `${BASE_URL}/images/Profile/` + currentUserProfile.profile_picture || "https://img.freepik.com/premium-vector/default-avatar-profile-icon-social-media-user-image-gray-avatar-icon-blank-profile-silhouette-vector-illustration_561158-3383.jpg?w=360" }}
                                 className="w-20 h-20 rounded-full"
                             />
 
@@ -171,7 +188,7 @@ export default function Profile() {
 
                         <Pressable
                             className="bg-[#1a1d2e] mt-4 py-2 rounded-md items-center"
-                            onPress={() => console.log("Edit Profile")}
+                            onPress={handleEditProfile}
                         >
                             <Text className="text-white font-semibold">Edit Profile</Text>
                         </Pressable>

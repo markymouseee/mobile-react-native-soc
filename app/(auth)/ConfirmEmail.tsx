@@ -1,5 +1,7 @@
 import { BASE_URL } from "@/api/url";
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useRef, useState } from "react";
@@ -16,12 +18,15 @@ import {
     View
 } from "react-native";
 import { useAuth } from '../../contexts/AuthContext';
+import { RootStackParamList } from '../TypeScript/types';
 
 interface Props {
     code: number;
 }
 
 export default function ConfirmEmail() {
+
+    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const scaleAnim = useRef(new Animated.Value(1)).current;
     const scaleLogout = useRef(new Animated.Value(1)).current;
@@ -34,8 +39,23 @@ export default function ConfirmEmail() {
     });
 
     const { logout, login } = useAuth();
-
+    const [email, setEmail] = useState<string>('');
     const [user, setUser] = useState<any>(null);
+
+    useEffect(() => {
+        const loadUserData = async () => {
+            const userDataString = await SecureStore.getItemAsync("userData");
+            if (userDataString) {
+                const parsed = JSON.parse(userDataString);
+                setUser(parsed);
+                if (parsed?.email) {
+                    setEmail(parsed.email);
+                }
+            }
+        };
+        loadUserData();
+    }, []);
+
 
     const handleConfirm = async () => {
         setIsLoading(true);
@@ -62,10 +82,20 @@ export default function ConfirmEmail() {
 
             const data = await response.json();
 
-            if (response.ok) {
+            if (data.status === 'success') {
                 setIsLoading(false)
-                await login(data.token, data.user)
-                router.push('/(tabs)/AppNavigator');
+                if (user.username === null) {
+                    navigation.reset({
+                        index: 0,
+                        routes: [{ name: 'ProfileSetup' }],
+                    })
+                } else {
+                    await login(data.token, data.user)
+                    navigation.reset({
+                        index: 0,
+                        routes: [{ name: 'NewsFeed' }],
+                    })
+                }
             } else {
                 console.log(data)
                 setIsLoading(false);
@@ -75,16 +105,6 @@ export default function ConfirmEmail() {
         }
     }
 
-    useEffect(() => {
-        const loadUserData = async () => {
-            const userDataString = await SecureStore.getItemAsync("userData");
-            if (userDataString) {
-                const parsed = JSON.parse(userDataString);
-                setUser(parsed);
-            }
-        };
-        loadUserData();
-    }, []);
 
 
     useEffect(() => {
@@ -190,7 +210,7 @@ export default function ConfirmEmail() {
                     </Text>
 
                     <Text className="text-green-300 font-poppins mb-5 text-sm text-center leading-relaxed">
-                        We have sent a confirmation code to your registered email address {user.email}. Please check your inbox to copy the 6 digits code.
+                        We have sent a confirmation code to your registered email address <Text className="font-bold text-purple-600">{email}</Text>. Please check your inbox to copy the 6 digits code.
                         If you don’t see the email, please check your spam or junk folder.
                         If you still haven’t received it, you can request a new confirmation email.
                     </Text>

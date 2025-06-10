@@ -1,8 +1,11 @@
 import { BASE_URL } from '@/api/url';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Checkbox } from 'expo-checkbox';
 import { useRouter } from 'expo-router';
+import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -21,6 +24,8 @@ import {
 } from 'react-native';
 import { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useAuth } from '../../contexts/AuthContext';
+import { RootStackParamList } from '../TypeScript/types';
+
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -35,6 +40,8 @@ export default function Login() {
   const [dots, setDots] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState<boolean>(false);
+
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const checkboxScale = useSharedValue(1);
   const checkboxAnimatedStyle = useAnimatedStyle(() => ({
@@ -57,7 +64,7 @@ export default function Login() {
     linkOpacity.value = withSpring(0.5, {}, () => {
       linkOpacity.value = withSpring(1);
     });
-    router.push('/(auth)/ConfirmEmail');
+    router.push('/screens/_profile_setup');
   };
 
   useEffect(() => {
@@ -138,40 +145,61 @@ export default function Login() {
 
       const response = await res.json();
 
+
       if (response.status === 'success') {
         const token = response.token;
         const user = response.user;
-
-        await login(token, user);
+        await SecureStore.setItemAsync('userData', JSON.stringify(response.user));
         setIsLoading(false);
-        router.replace('/(tabs)/AppNavigator');
-      } else {
-        setIsLoading(false);
-        try {
-          const confirmEmailResponse = await fetch(`${BASE_URL}/api/request-confirm-email`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
-            body: JSON.stringify({
-              user: response.user
-            })
+        if (user.username === null) {
+          setIsLoading(false);
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'ProfileSetup' }],
           })
-
-          const dataRes = await confirmEmailResponse.json();
-
-          if (confirmEmailResponse.ok) {
-            router.push('/(auth)/ConfirmEmail');
-          } else {
-            console.error(dataRes);
-          }
-        } catch (error) {
-          console.error(error);
+        } else {
+          await login(token, user);
+          setIsLoading(false);
+          navigation.navigate('NewsFeed')
         }
-        setErrorMessage(response.message || 'Login failed. Try again.');
-        triggerErrorAnimation();
-        setIsLoading(false);
+      } else {
+        if (response.errors) {
+          triggerErrorAnimation();
+          setErrorMessage(response.errors[0].message);
+        } else {
+          setIsLoading(false);
+          setErrorMessage(response.message || 'Login failed. Try again.');
+          triggerErrorAnimation();
+          if (response.message === 'Please verify your email first.') {
+            await SecureStore.setItemAsync('userData', JSON.stringify(response.user));
+
+            try {
+              const confirmEmailResponse = await fetch(`${BASE_URL}/api/request-confirm-email`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                  user: response.user
+                })
+              })
+
+              const dataRes = await confirmEmailResponse.json();
+
+              if (confirmEmailResponse.ok) {
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'ConfirmEmail' }],
+                })
+              } else {
+                console.error(dataRes);
+              }
+            } catch (error) {
+              console.error(error);
+            }
+          }
+        }
       }
     } catch (err: any) {
       console.error('Login error:', err);

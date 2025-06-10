@@ -132,7 +132,7 @@ export default function HomeScreen() {
     <View className="bg-[#1a1d2e] rounded-xl py-4 px-4 mb-5">
       <View className="flex-row items-center">
         <Image
-          source={{ uri: item.users.profile_picture || "https://scontent.fcgy1-1.fna.fbcdn.net/v/t39.30808-6/499154638_703361578724799_6308952919668520827_n.jpg?_nc_cat=106&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeH2S_Be7dpVyFLSOpmy3A_tw0UrV9H3N0fDRStX0fc3RwIbLyHR9-5sCsuDUHycTffKCbiM11gk0zEFyBADMvr2&_nc_ohc=FoDgx9xoFwsQ7kNvwHSjYnk&_nc_oc=AdkhpGUpXHd9Z0Tc0Ue34_REAwKI4DOSC_EPUTZJwmw7wCvVPWPbmDE7L3ZrNnWAPfHO_UOdulUKrZRnn_X6QqHY&_nc_zt=23&_nc_ht=scontent.fcgy1-1.fna&_nc_gid=WXMAX7lpv2gL-2t9GQ1cKg&oh=00_AfMFeNhE1VjY3DGqZD9qt_yBrSt5dH7G_Hijs13RGYSKOw&oe=684B85A2" }}
+          source={{ uri: `${BASE_URL}/images/Profile/` + item.users.profile_picture || "https://img.freepik.com/premium-vector/default-avatar-profile-icon-social-media-user-image-gray-avatar-icon-blank-profile-silhouette-vector-illustration_561158-3383.jpg?w=360" }}
           className="w-10 h-10 rounded-full mr-2"
         />
         <View>
@@ -233,7 +233,7 @@ export default function HomeScreen() {
                       </View>
 
                       <Text className="text-white text-base mb-3 font-semibold">
-                        Comments on {selectedPost?.user}&#39;s post
+                        Comments on {selectedPost?.users?.name}&#39;s post
                       </Text>
 
                       <View className="mb-4 max-h-60">
@@ -251,7 +251,7 @@ export default function HomeScreen() {
                                 <View className="flex-1">
                                   <View className="bg-[#2a2e3e] rounded-xl px-4 py-3">
                                     <Text className="text-white font-semibold text-sm">
-                                      {item.user}
+                                      {item.users.name}
                                     </Text>
                                     <Text className="text-gray-300 text-sm mt-1">
                                       {item.text}

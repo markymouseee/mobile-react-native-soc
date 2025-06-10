@@ -144,7 +144,7 @@ export default function Register() {
 
                     const dataRes = await confirmEmailResponse.json();
 
-                    if (confirmEmailResponse.ok) {
+                    if (dataRes.status === 'success') {
                         router.push('/(auth)/ConfirmEmail');
                     } else {
                         console.error(dataRes);
