@@ -342,7 +342,7 @@ export default function Login() {
 
 
           <Pressable
-            onPress={() => router.push('/(auth)/register')}
+            onPress={() => navigation.navigate('Register')}
             className="mt-6 items-center"
           >
             <Text className="text-green-400 font-poppins text-sm">

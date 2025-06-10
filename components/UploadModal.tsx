@@ -1,7 +1,9 @@
 import { BASE_URL } from "@/api/url";
+import { RootStackParamList } from '@/app/TypeScript/types';
 import { Feather, FontAwesome } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from "expo-image-picker";
-import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useState } from "react";
 import { Image, Modal, Text, TextInput, TouchableOpacity, View } from "react-native";
@@ -11,6 +13,7 @@ interface userProps {
 }
 
 export default function UploadModal({ modalVisible, setModalVisible }: any) {
+    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
     const [title, setTitle] = useState("");
     const [body, setBody] = useState("");
     const [imageUri, setImageUri] = useState<string | null>(null);
@@ -63,14 +66,13 @@ export default function UploadModal({ modalVisible, setModalVisible }: any) {
                     uri: imageUri,
                     name: filename,
                     type,
-                } as any); // you may need to cast for TS
+                } as any);
             }
 
             const response = await fetch(`${BASE_URL}/api/create-post`, {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
-                    // 'Content-Type' will be set automatically for multipart/form-data
                 },
                 body: formData,
             });
@@ -78,7 +80,7 @@ export default function UploadModal({ modalVisible, setModalVisible }: any) {
             const data = await response.json();
 
             if (response.ok) {
-                router.push('/(tabs)/AppNavigator'); // or navigate to feed/profile
+                navigation.push('NewsFeed');
             } else {
                 console.error("Validation errors:", data.errors || data.message);
             }

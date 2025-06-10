@@ -1,4 +1,5 @@
 import { BASE_URL } from '@/api/url';
+import SkipModal from '@/components/SkipModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from "@react-navigation/native";
@@ -27,7 +28,7 @@ export const ProfileSetup = () => {
     const [dots, setDots] = useState('');
     const [user, setUser] = useState<any>(null);
     const [name, setName] = useState<string>('');
-
+    const [showSkipModal, setShowSkipModal] = useState(false);
     const { checkLogin } = useAuth();
 
     useEffect(() => {
@@ -175,6 +176,10 @@ export const ProfileSetup = () => {
         }
     }
 
+    const handleSkip = async () => {
+        setShowSkipModal(true)
+    }
+
     return (
         <KeyboardAvoidingView
             style={{ flex: 1, backgroundColor: "#0c1021" }}
@@ -233,7 +238,7 @@ export const ProfileSetup = () => {
                                 placeholderTextColor="#a7f3d0"
                             />
                         </View>
-
+                        <SkipModal setShowSkipModal={setShowSkipModal} showSkipModal={showSkipModal} />
                         {errors ? (
                             <Animated.Text
                                 style={{
@@ -269,9 +274,9 @@ export const ProfileSetup = () => {
                             </Pressable>
                         </Animated.View>
 
-                        <Pressable className='flex-row items-center justify-center mt-4'>
-                            <FontAwesome name='arrow-right' size={20} color="#a7f3d0" />
-                            <Text className="text-green-300 font-poppins text-lg ml-1">Skip</Text>
+                        <Pressable onPress={handleSkip} className='flex-row items-center justify-center mt-4'>
+                            <FontAwesome name='arrow-right' size={16} color="#a7f3d0" />
+                            <Text className="text-green-300 font-poppins text-base ml-1">Skip</Text>
                         </Pressable>
                     </View>
                 </ScrollView>

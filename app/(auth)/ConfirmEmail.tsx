@@ -84,7 +84,7 @@ export default function ConfirmEmail() {
 
             if (data.status === 'success') {
                 setIsLoading(false)
-                if (user.username === null) {
+                if (data.user.username === null) {
                     navigation.reset({
                         index: 0,
                         routes: [{ name: 'ProfileSetup' }],
@@ -97,8 +97,13 @@ export default function ConfirmEmail() {
                     })
                 }
             } else {
-                console.log(data)
-                setIsLoading(false);
+                if (data.errors) {
+                    setIsLoading(false);
+                    setErrorMessage(data.errors[0].message)
+                } else {
+                    setIsLoading(false);
+                    setErrorMessage(data.message)
+                }
             }
         } catch (error) {
             console.error("Something went wrong! ", error)

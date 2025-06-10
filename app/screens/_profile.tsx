@@ -17,6 +17,7 @@ import {
     View,
 } from "react-native";
 
+import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../TypeScript/types';
@@ -73,7 +74,7 @@ export default function Profile() {
     });
 
 
-    const { logout, login } = useAuth();
+    const { logout } = useAuth();
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
 
@@ -153,7 +154,11 @@ export default function Profile() {
                         <View className="flex-row items-center justify-between">
 
                             <Image
-                                source={{ uri: `${BASE_URL}/images/Profile/` + currentUserProfile.profile_picture || "https://img.freepik.com/premium-vector/default-avatar-profile-icon-social-media-user-image-gray-avatar-icon-blank-profile-silhouette-vector-illustration_561158-3383.jpg?w=360" }}
+                                source={{
+                                    uri: currentUserProfile.profile_picture
+                                        ? `${BASE_URL}/images/Profile/${currentUserProfile.profile_picture}`
+                                        : "https://img.freepik.com/premium-vector/default-avatar-profile-icon-social-media-user-image-gray-avatar-icon-blank-profile-silhouette-vector-illustration_561158-3383.jpg?w=360"
+                                }}
                                 className="w-20 h-20 rounded-full"
                             />
 
@@ -196,26 +201,35 @@ export default function Profile() {
 
                     <View className="border-t border-[#1a1d2e] mt-6 mb-2" />
 
-                    <FlatList
-                        data={currentUserProfile.posts}
-                        numColumns={3}
-                        keyExtractor={(item) => item.id.toString()}
-                        scrollEnabled={false}
-                        contentContainerStyle={{ marginBottom: 30 }}
-                        refreshing={refreshing}
-                        onRefresh={onRefresh}
-                        renderItem={({ item }) => (
-                            <Image
-                                source={{ uri: `${BASE_URL}/images/Posts/` + item.image }}
-                                style={{
-                                    width: imageSize,
-                                    height: imageSize,
-                                    borderWidth: 0.5,
-                                    borderColor: "#1a1d2e",
-                                }}
-                            />
-                        )}
-                    />
+                    {currentUserProfile.posts.length > 0 ? (
+                        <FlatList
+                            data={currentUserProfile.posts}
+                            numColumns={3}
+                            keyExtractor={(item) => item.id.toString()}
+                            scrollEnabled={false}
+                            contentContainerStyle={{ marginBottom: 30 }}
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            renderItem={({ item }) => (
+                                <Image
+                                    source={{ uri: `${BASE_URL}/images/Posts/` + item.image }}
+                                    style={{
+                                        width: imageSize,
+                                        height: imageSize,
+                                        borderWidth: 0.5,
+                                        borderColor: "#1a1d2e",
+                                    }}
+                                />
+                            )}
+                        />
+                    ) : (
+                        <View className="flex-col justify-center items-center mt-5">
+                            <Text className="text-gray-400 font-poppins text-2xl">
+                                No posts yet
+                            </Text>
+                            <Ionicons name="camera-outline" size={40} color={"gray"} />
+                        </View>
+                    )}
                 </ScrollView>
             </TouchableWithoutFeedback>
         </KeyboardAvoidingView>

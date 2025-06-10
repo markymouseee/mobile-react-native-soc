@@ -19,7 +19,10 @@ import {
 
 import { BASE_URL } from "@/api/url";
 import TermsPrivacyModal from "@/components/TermsPrivacyModal";
-import { router } from "expo-router";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import * as SecureStore from "expo-secure-store";
+import { RootStackParamList } from '../TypeScript/types';
 
 interface RegisterProps {
     fullname: string;
@@ -29,6 +32,7 @@ interface RegisterProps {
 }
 
 export default function Register() {
+    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
     const [formData, setFormData] = useState<RegisterProps>({
         fullname: '',
         email: '',
@@ -126,7 +130,7 @@ export default function Register() {
 
             const data = await response.json();
 
-            if (response.ok) {
+            if (data.status === 'success') {
                 const user = data.user;
 
                 setIsLoading(false);
@@ -145,9 +149,18 @@ export default function Register() {
                     const dataRes = await confirmEmailResponse.json();
 
                     if (dataRes.status === 'success') {
-                        router.push('/(auth)/ConfirmEmail');
+                        await SecureStore.setItemAsync('userData', JSON.stringify(user));
+                        setIsLoading(false);
+                        navigation.reset({
+                            index: 0,
+                            routes: [{ name: 'ConfirmEmail' }]
+                        })
                     } else {
-                        console.error(dataRes);
+                        if (dataRes.errors) {
+                            setErrorMessage(dataRes.errors[0].message);
+                        } else {
+                            setErrorMessage(dataRes.message);
+                        }
                     }
                 } catch (error) {
                     console.error(error);
@@ -366,7 +379,7 @@ export default function Register() {
                     </Animated.View>
 
                     <Pressable
-                        onPress={() => router.push('/(auth)/login')}
+                        onPress={() => navigation.push('Login')}
                         className="mt-6 items-center"
                     >
                         <Text className="text-green-400 font-poppins text-sm">
