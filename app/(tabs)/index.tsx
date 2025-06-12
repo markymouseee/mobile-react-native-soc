@@ -130,7 +130,7 @@ export default function HomeScreen() {
 
   const renderPost = ({ item }: { item: PostProps }) => (
     <View className="bg-[#1a1d2e] rounded-xl py-4 px-4 mb-5">
-      <View className="flex-row items-center">
+      <View className="flex-row items-center mb-3">
         <Image
           source={{ uri: `${BASE_URL}/images/Profile/` + item.users.profile_picture || "https://img.freepik.com/premium-vector/default-avatar-profile-icon-social-media-user-image-gray-avatar-icon-blank-profile-silhouette-vector-illustration_561158-3383.jpg?w=360" }}
           className="w-10 h-10 rounded-full mr-2"
@@ -146,10 +146,12 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <Text className="text-white mb-2 font-medium text-base mt-3">
-        {item.title}
-      </Text>
-      <Text className="text-gray-400 text-sm mb-2 leading-5">{item.body}</Text>
+      {item.title && (
+        <Text className="text-white mb-2 font-medium text-base">
+          {item.title}
+        </Text>
+      )}
+      <Text className="text-gray-300 text-sm mb-2 leading-5">{item.body}</Text>
 
       {item.image && (
         <View className="rounded-xl overflow-hidden border border-[#2e2f45] my-3">

@@ -1,8 +1,8 @@
 import { BASE_URL } from "@/api/url";
+import LogoutModal from "@/components/LogoutModal";
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -14,6 +14,7 @@ import {
     Platform, Pressable, ScrollView,
     Text,
     TextInput,
+    TouchableOpacity,
     TouchableWithoutFeedback,
     View
 } from "react-native";
@@ -37,10 +38,13 @@ export default function ConfirmEmail() {
     const [formData, setFormData] = useState<Props>({
         code: 0,
     });
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-    const { logout, login } = useAuth();
+    const { login } = useAuth();
     const [email, setEmail] = useState<string>('');
     const [user, setUser] = useState<any>(null);
+    const [timeLeft, setTimeLeft] = useState(180); // 3 minutes
+    const [isRunning, setIsRunning] = useState(true);
 
     useEffect(() => {
         const loadUserData = async () => {
@@ -62,6 +66,13 @@ export default function ConfirmEmail() {
 
         if (formData.code === 0 || formData.code === undefined) {
             setErrorMessage('Please enter a valid confirmation code.');
+            setIsLoading(false);
+            triggerErrorAnimation();
+            return;
+        }
+
+        if (formData.code.toString().length <= 5) {
+            setErrorMessage('Verification code must be 6 digits long.');
             setIsLoading(false);
             triggerErrorAnimation();
             return;
@@ -100,17 +111,17 @@ export default function ConfirmEmail() {
                 if (data.errors) {
                     setIsLoading(false);
                     setErrorMessage(data.errors[0].message)
+                    triggerErrorAnimation();
                 } else {
                     setIsLoading(false);
                     setErrorMessage(data.message)
+                    triggerErrorAnimation();
                 }
             }
         } catch (error) {
             console.error("Something went wrong! ", error)
         }
     }
-
-
 
     useEffect(() => {
         const dotCycle = ['.', '..', '...'];
@@ -174,8 +185,53 @@ export default function ConfirmEmail() {
 
 
     const handleLogout = async () => {
-        await logout();
-        router.push('/login');
+        setShowLogoutModal(true);
+    }
+
+
+
+    useEffect(() => {
+        let timer: any;
+        if (isRunning && timeLeft > 0) {
+            timer = setInterval(() => {
+                setTimeLeft(prev => prev - 1);
+            }, 1000);
+        } else if (timeLeft === 0) {
+            setIsRunning(false);
+        }
+
+        return () => clearInterval(timer); // Cleanup on unmount
+    }, [isRunning, timeLeft]);
+
+    const formatTime = () => {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    };
+
+    const handleResend = async () => {
+        try {
+            const confirmEmailResponse = await fetch(`${BASE_URL}/api/request-confirm-email`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    user: user
+                })
+            })
+
+            const dataRes = await confirmEmailResponse.json();
+
+            if (dataRes.status === 'success') {
+                setTimeLeft(180);
+                setIsRunning(true);
+            }
+
+        } catch (error) {
+            console.error(error);
+        }
     }
 
     return (
@@ -274,13 +330,22 @@ export default function ConfirmEmail() {
                         </Pressable>
                     </Animated.View>
 
-                    <View className="flex-row justify-between mt-3">
+                    <LogoutModal show={showLogoutModal} setShow={setShowLogoutModal} />
+
+                    <View className="flex-row justify-between mt-3 items-center">
                         <Text className="text-green-300 font-poppins text-sm">
-                            Didn’t receive the email?
+                            Didn’t receive the code?
                         </Text>
-                        <Text className="text-purple-500 font-poppins text-sm">
-                            Resend
-                        </Text>
+
+                        {isRunning ? (
+                            <Text className="text-purple-400 text-xs font-poppins">Resend available in {formatTime()}</Text>
+                        ) : (
+                            <TouchableOpacity onPress={() => {
+                                handleResend();
+                            }}>
+                                <Text className="text-purple-600 text-sm font-poppins">Resend Code</Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
                 </ScrollView>
             </TouchableWithoutFeedback>

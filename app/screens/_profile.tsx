@@ -210,16 +210,18 @@ export default function Profile() {
                             contentContainerStyle={{ marginBottom: 30 }}
                             refreshing={refreshing}
                             onRefresh={onRefresh}
-                            renderItem={({ item }) => (
-                                <Image
-                                    source={{ uri: `${BASE_URL}/images/Posts/` + item.image }}
-                                    style={{
-                                        width: imageSize,
-                                        height: imageSize,
-                                        borderWidth: 0.5,
-                                        borderColor: "#1a1d2e",
-                                    }}
-                                />
+                            renderItem={({ item }: any) => (
+                                item.image && (
+                                    <Image
+                                        source={{ uri: `${BASE_URL}/images/Posts/` + item.image }}
+                                        style={{
+                                            width: imageSize,
+                                            height: imageSize,
+                                            borderWidth: 0.5,
+                                            borderColor: "#1a1d2e",
+                                        }}
+                                    />
+                                )
                             )}
                         />
                     ) : (

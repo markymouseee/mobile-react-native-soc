@@ -6,7 +6,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from "expo-image-picker";
 import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useState } from "react";
-import { Image, Modal, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Image, Modal, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 interface userProps {
     id: number;
@@ -51,6 +51,10 @@ export default function UploadModal({ modalVisible, setModalVisible }: any) {
     };
 
     const handleUpload = async () => {
+        if (body === '') {
+            Alert.alert('Error', 'Post body cannot be empty');
+            return;
+        }
         try {
             const formData = new FormData();
             formData.append('user_id', user.id.toString());

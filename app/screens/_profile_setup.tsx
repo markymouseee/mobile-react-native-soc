@@ -125,6 +125,15 @@ export const ProfileSetup = () => {
             triggerErrorAnimation();
             return;
         }
+
+        // Example: check if username matches a pattern (update regex as needed)
+        if (!/^[a-z0-9_]+$/.test(form.username)) {
+            setIsLoading(false);
+            setErrors('Username should only contain lowercase letters, numbers, and underscores');
+            triggerErrorAnimation();
+            return;
+        }
+
         const formData = new FormData();
 
         formData.append('user_id', user.id.toString());
@@ -164,10 +173,12 @@ export const ProfileSetup = () => {
             } else {
                 if (data.errors) {
                     setIsLoading(false)
-                    setErrors(data.errors);
+                    setErrors(data.errors[0].message);
+                    triggerErrorAnimation();
                 } else {
                     setIsLoading(false)
                     setErrors(data.message)
+                    triggerErrorAnimation();
                 }
             }
         } catch (error) {
