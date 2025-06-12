@@ -3,13 +3,16 @@ import { Feather, FontAwesome, Ionicons } from "@expo/vector-icons";
 import dayjs from 'dayjs';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import React, { useCallback, useEffect, useState } from "react";
+import * as SecureStore from "expo-secure-store";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Animated,
   BackHandler,
   FlatList,
   Image,
   Keyboard,
   KeyboardAvoidingView,
+  LayoutAnimation,
   Modal,
   Platform,
   Pressable,
@@ -18,6 +21,7 @@ import {
   Text,
   TextInput,
   TouchableWithoutFeedback,
+  UIManager,
   View
 } from "react-native";
 
@@ -42,32 +46,48 @@ const getFormattedTime = (timestamp: any) => {
     return `${diffInHours} hours ago`;
   }
 
-  if (diffInHours < 48) return 'yesterday';
+  if (diffInHours < 48) return 'Yesterday';
   return created.format('MMMM DD, YYYY [at] h:mm a');
 };
 
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 type PostProps = {
   id: number;
   users: {
+    id: number
     name: string;
     profile_picture: string;
   }
   title: string;
   body: string;
   image: string;
-  likes: number;
+  likes: string;
   comments: { id: number; user: string; text: string }[];
   created_at: string;
 }
 
 export default function HomeScreen() {
-  const [likedPosts, setLikedPosts] = useState<string[]>([]);
+  const [likedPosts, setLikedPosts] = useState<any[]>([]);
   const [commentModal, setCommentModal] = useState(false);
   const [selectedPost, setSelectedPost] = useState<any>(null);
   const [comment, setComment] = useState("");
   const [posts, setPosts] = useState<PostProps[]>([])
   const [refreshing, setRefreshing] = useState<boolean>(false);
+
+  const [likeCounts, setLikeCounts] = useState<{ [key: string]: number }>({});
+  const [comments, setComments] = useState<any>(null);
+
+  const flatListRef = useRef<FlatList<any>>(null);
+
+  setTimeout(() => {
+    flatListRef.current?.scrollToEnd({ animated: true });
+  }, 100);
 
   const toggleLike = (postId: string) => {
     setLikedPosts((prev) =>
@@ -93,6 +113,11 @@ export default function HomeScreen() {
       });
       const data = await response.json();
 
+      const counts: { [key: string]: number } = {};
+      data.forEach((post: any) => {
+        counts[post.id.toString()] = post.likes.length;
+      });
+      setLikeCounts(counts);
       const shuffled = data.sort(() => Math.random() - 0.5);
 
       setPosts(shuffled);
@@ -101,9 +126,122 @@ export default function HomeScreen() {
     }
   };
 
+  const getCurrentUserId = async () => {
+    const user = await SecureStore.getItem('userData'); // or SecureStore.getItemAsync
+    return user ? JSON.parse(user).id : null;
+  };
+
+
+  const handlelikePost = async (postId: number) => {
+    const alreadyLiked = likedPosts.includes(postId.toString());
+    const currentUserId = await getCurrentUserId();
+    try {
+      const response = await fetch(`${BASE_URL}/api/${alreadyLiked ? 'delete-like' : 'store-like'}`, {
+        method: alreadyLiked ? 'DELETE' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          user_id: currentUserId,
+          post_id: postId
+        })
+      })
+      const data = await response.json();
+
+      if (data.status === 'success') {
+        setLikedPosts((prevLikedPosts) => [...prevLikedPosts, postId.toString()]);
+        await getLikesForPosts();
+        setLikeCounts((prev) => ({
+          ...prev,
+          [postId]: alreadyLiked ? prev[postId] - 1 : prev[postId] + 1,
+        }));
+      } else {
+        console.error(data.message)
+      }
+    } catch (error) {
+      console.error("Fetch error:", error);
+    }
+  }
+
+  const getLikesForPosts = async () => {
+    const currentUserId = await getCurrentUserId();
+    try {
+      const response = await fetch(`${BASE_URL}/api/get-likes`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+      })
+      const data = await response.json();
+      setLikedPosts(data
+        .filter((like: any) => like.user_id === currentUserId)
+        .map((like: any) => like.post_id.toString())
+      );
+    } catch (error) {
+      console.error("Fetch error:", error);
+    }
+  }
+
+  const fetchComments = async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/show-comments`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+      setComments(data)
+    } catch (error) {
+      console.error('Fetch error: ', error)
+    }
+  }
+
+  useEffect(() => {
+    fetchComments();
+  }, [])
+
+  const handleCommentSubmit = async (postId: number) => {
+    const currentUserId = await getCurrentUserId();
+    try {
+      const response = await fetch(`${BASE_URL}/api/store-comment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          user_id: currentUserId,
+          post_id: postId,
+          content: comment,
+        })
+      })
+
+      const data = await response.json();
+
+      if (data.status === 'success') {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        fetchComments();
+        setComment('');
+      }
+
+    } catch (error) {
+      console.error("Something went wrong!", error)
+    }
+  }
+
+  useEffect(() => {
+    getLikesForPosts();
+  }, [])
+
   const onRefresh = useCallback(async () => {
     await fetchPosts();
-
+    await getLikesForPosts();
+    await fetchComments();
     setRefreshing(true);
     setTimeout(() => {
       setRefreshing(false);
@@ -164,7 +302,10 @@ export default function HomeScreen() {
       )}
 
       <View className="flex-row items-center mt-3 space-x-6">
-        <Pressable onPress={() => toggleLike(item.id.toString())}>
+        <Pressable onPress={() => {
+          toggleLike(item.id.toString());
+          handlelikePost(item.id);
+        }}>
           <View className="flex-row items-center space-x-2 gap-1 mr-2">
             <FontAwesome
               name="heart"
@@ -174,7 +315,9 @@ export default function HomeScreen() {
               }
             />
             <Text className="text-white text-sm font-poppinss">
-              {item.likes ?? 0} {item.likes === 1 ? "like" : "likes"}
+              <Text className="text-white text-sm font-poppinss">
+                {likeCounts[item.id.toString()] ?? 0}
+              </Text>
             </Text>
           </View>
         </Pressable>
@@ -239,43 +382,58 @@ export default function HomeScreen() {
                       </Text>
 
                       <View className="mb-4 max-h-60">
-                        {selectedPost?.comments?.length > 0 ? (
-                          <FlatList
-                            data={selectedPost.comments}
-                            keyExtractor={(item) => item.id.toString()}
-                            renderItem={({ item }) => (
-                              <View className="flex-row items-start mb-5 space-x-3">
-                                <View className="w-10 h-10 rounded-full bg-purple-500 items-center justify-center mr-2">
-                                  <Text className="text-white font-bold text-base">
-                                    {item.user?.charAt(0).toUpperCase()}
-                                  </Text>
-                                </View>
-                                <View className="flex-1">
-                                  <View className="bg-[#2a2e3e] rounded-xl px-4 py-3">
-                                    <Text className="text-white font-semibold text-sm">
-                                      {item.users.name}
-                                    </Text>
-                                    <Text className="text-gray-300 text-sm mt-1">
-                                      {item.text}
-                                    </Text>
+                          {comments?.length > 0 ? (
+                            <FlatList
+                              scrollEnabled={true}
+                              ref={flatListRef}
+                              data={comments}
+                              keyExtractor={(item) => item.id}
+                              renderItem={({ item }) => (
+                                <Animated.View style={{ opacity: 1 }}>
+                                  <View className="flex-row items-start mb-5 space-x-3">
+                                    <View className="w-10 h-10 rounded-full items-center justify-center mr-2 ml-2">
+                                      <Image
+                                        source={{
+                                          uri: item.users.profile_picture
+                                            ? `${BASE_URL}/images/Profile/${item.users.profile_picture}`
+                                            : "https://img.freepik.com/premium-vector/default-avatar-profile-icon-social-media-user-image-gray-avatar-icon-blank-profile-silhouette-vector-illustration_561158-3383.jpg?w=360"
+                                        }}
+                                        className="w-10 h-10 rounded-full mr-2"
+                                      />
+                                    </View>
+                                    <View className="flex-1">
+                                      <View className="bg-[#2a2e3e] rounded-xl px-4 py-3">
+                                        <Text className="text-white font-semibold text-sm">
+                                          {item.users?.name ?? 'Unknown'}
+                                        </Text>
+                                        <Text className="text-gray-300 text-sm mt-1">
+                                          {item.content}
+                                        </Text>
+                                      </View>
+                                      <View className="flex-row mt-1 space-x-4 px-1 gap-2">
+                                        <Text className="text-gray-400 text-xs">
+                                          {getFormattedTime(item.created_at)}
+                                        </Text>
+                                        <Pressable>
+                                          <Text className="text-gray-400 text-xs font-semibold">Like</Text>
+                                        </Pressable>
+                                        <Pressable>
+                                          <Text className="text-gray-400 text-xs font-semibold">Reply</Text>
+                                        </Pressable>
+                                      </View>
+                                    </View>
                                   </View>
-                                  <View className="flex-row mt-1 space-x-4 px-1 gap-2">
-                                    <Text className="text-gray-400 text-xs">2h</Text>
-                                    <Pressable>
-                                      <Text className="text-gray-400 text-xs font-semibold">Like</Text>
-                                    </Pressable>
-                                    <Pressable>
-                                      <Text className="text-gray-400 text-xs font-semibold">Reply</Text>
-                                    </Pressable>
-                                  </View>
-                                </View>
-                              </View>
-                            )}
-                          />
-                        ) : (
-                          <Text className="text-gray-400 italic">No comments yet.</Text>
-                        )}
+                                </Animated.View>
+                              )}
+                              contentContainerStyle={{ paddingBottom: 20 }}
+                              showsVerticalScrollIndicator={false}
+                            />
+
+                          ) : (
+                            <Text className="text-gray-400 italic">No comments yet.</Text>
+                          )}
                       </View>
+
 
                       <View className="flex-row items-center space-x-3 gap-2">
                         <TextInput
@@ -288,8 +446,7 @@ export default function HomeScreen() {
                         />
                         <Pressable
                           onPress={() => {
-                            setComment("");
-                            setCommentModal(false);
+                            handleCommentSubmit(selectedPost.id)
                           }}
                         >
                           <Ionicons name="send" size={22} color="#8f00ff" />

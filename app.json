@@ -1,8 +1,8 @@
 {
   "expo": {
     "name": "Vibio App",
-    "slug": "vibio-app",
-    "version": "1.0.0",
+    "slug": "mobile-react-native-soc",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "vibioapp",
@@ -13,7 +13,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/icon.png",
+        "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#0c1021"
       },
       "edgeToEdgeEnabled": true,
@@ -29,7 +29,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/icon.png",
+          "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#0c1021"
@@ -47,6 +47,6 @@
         "projectId": "7f3bf14d-01c8-4206-ace3-5513868e9b7e"
       }
     },
-    "owner": "Mark Noriel Pregua"
+    "owner": "root4markymouse"
   }
 }
