@@ -68,7 +68,14 @@ type PostProps = {
   body: string;
   image: string;
   likes: string;
-  comments: { id: number; user: string; text: string }[];
+  comments: {
+    id: number;
+    users: {
+      name: string
+      profile_picture: string
+    };
+    content: string
+  }[];
   created_at: string;
 }
 
@@ -82,7 +89,7 @@ export default function HomeScreen() {
 
   const [likeCounts, setLikeCounts] = useState<{ [key: string]: number }>({});
   const [comments, setComments] = useState<any>(null);
-
+  const [postId, setPostId] = useState<any>(null);
   const flatListRef = useRef<FlatList<any>>(null);
 
   setTimeout(() => {
@@ -98,8 +105,11 @@ export default function HomeScreen() {
   };
 
   const openCommentModal = (post: any) => {
+    const postIdStr = post.id.toString();
+    setPostId(postIdStr);
     setSelectedPost(post);
     setCommentModal(true);
+    fetchComments(postIdStr);
   };
 
   const fetchPosts = async () => {
@@ -183,10 +193,9 @@ export default function HomeScreen() {
       console.error("Fetch error:", error);
     }
   }
-
-  const fetchComments = async () => {
+  const fetchComments = async (postId: string) => {
     try {
-      const response = await fetch(`${BASE_URL}/api/show-comments`, {
+      const response = await fetch(`${BASE_URL}/api/show-comments?post_id=${postId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -195,15 +204,11 @@ export default function HomeScreen() {
       });
 
       const data = await response.json();
-      setComments(data)
+      setComments(data);
     } catch (error) {
-      console.error('Fetch error: ', error)
+      console.error('Fetch error: ', error);
     }
-  }
-
-  useEffect(() => {
-    fetchComments();
-  }, [])
+  };
 
   const handleCommentSubmit = async (postId: number) => {
     const currentUserId = await getCurrentUserId();
@@ -225,7 +230,7 @@ export default function HomeScreen() {
 
       if (data.status === 'success') {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        fetchComments();
+        fetchComments(postId.toString());
         setComment('');
       }
 
@@ -241,7 +246,7 @@ export default function HomeScreen() {
   const onRefresh = useCallback(async () => {
     await fetchPosts();
     await getLikesForPosts();
-    await fetchComments();
+
     setRefreshing(true);
     setTimeout(() => {
       setRefreshing(false);
@@ -270,7 +275,7 @@ export default function HomeScreen() {
     <View className="bg-[#1a1d2e] rounded-xl py-4 px-4 mb-5">
       <View className="flex-row items-center mb-3">
         <Image
-          source={{ uri: `${BASE_URL}/images/Profile/` + item.users.profile_picture || "https://img.freepik.com/premium-vector/default-avatar-profile-icon-social-media-user-image-gray-avatar-icon-blank-profile-silhouette-vector-illustration_561158-3383.jpg?w=360" }}
+          source={{ uri: item.users.profile_picture ? `${BASE_URL}/images/Profile/` + item.users.profile_picture : "https://img.freepik.com/premium-vector/default-avatar-profile-icon-social-media-user-image-gray-avatar-icon-blank-profile-silhouette-vector-illustration_561158-3383.jpg?w=360" }}
           className="w-10 h-10 rounded-full mr-2"
         />
         <View>
@@ -329,7 +334,10 @@ export default function HomeScreen() {
 
       <View className="mt-2">
         <Text
-          onPress={() => openCommentModal(item)}
+          onPress={() => {
+            openCommentModal(item)
+          }
+          }
           className="text-gray-400 text-sm"
         >
           View all {item.comments?.length ?? 0}{" "}
@@ -382,56 +390,56 @@ export default function HomeScreen() {
                       </Text>
 
                       <View className="mb-4 max-h-60">
-                          {comments?.length > 0 ? (
-                            <FlatList
-                              scrollEnabled={true}
-                              ref={flatListRef}
-                              data={comments}
-                              keyExtractor={(item) => item.id}
-                              renderItem={({ item }) => (
-                                <Animated.View style={{ opacity: 1 }}>
-                                  <View className="flex-row items-start mb-5 space-x-3">
-                                    <View className="w-10 h-10 rounded-full items-center justify-center mr-2 ml-2">
-                                      <Image
-                                        source={{
-                                          uri: item.users.profile_picture
-                                            ? `${BASE_URL}/images/Profile/${item.users.profile_picture}`
-                                            : "https://img.freepik.com/premium-vector/default-avatar-profile-icon-social-media-user-image-gray-avatar-icon-blank-profile-silhouette-vector-illustration_561158-3383.jpg?w=360"
-                                        }}
-                                        className="w-10 h-10 rounded-full mr-2"
-                                      />
+                        {comments?.length > 0 ? (
+                          <FlatList
+                            scrollEnabled={true}
+                            ref={flatListRef}
+                            data={comments}
+                            keyExtractor={(item) => item.id}
+                            renderItem={({ item }) => (
+                              <Animated.View style={{ opacity: 1 }}>
+                                <View className="flex-row items-start mb-5 space-x-3">
+                                  <View className="w-10 h-10 rounded-full items-center justify-center mr-2 ml-2">
+                                    <Image
+                                      source={{
+                                        uri: item.users.profile_picture
+                                          ? `${BASE_URL}/images/Profile/${item.users.profile_picture}`
+                                          : "https://img.freepik.com/premium-vector/default-avatar-profile-icon-social-media-user-image-gray-avatar-icon-blank-profile-silhouette-vector-illustration_561158-3383.jpg?w=360"
+                                      }}
+                                      className="w-10 h-10 rounded-full mr-2"
+                                    />
+                                  </View>
+                                  <View className="flex-1">
+                                    <View className="bg-[#2a2e3e] rounded-xl px-4 py-3">
+                                      <Text className="text-white font-semibold text-sm">
+                                        {item.users.name ?? 'Unknown'}
+                                      </Text>
+                                      <Text className="text-gray-300 text-sm mt-1">
+                                        {item.content}
+                                      </Text>
                                     </View>
-                                    <View className="flex-1">
-                                      <View className="bg-[#2a2e3e] rounded-xl px-4 py-3">
-                                        <Text className="text-white font-semibold text-sm">
-                                          {item.users?.name ?? 'Unknown'}
-                                        </Text>
-                                        <Text className="text-gray-300 text-sm mt-1">
-                                          {item.content}
-                                        </Text>
-                                      </View>
-                                      <View className="flex-row mt-1 space-x-4 px-1 gap-2">
-                                        <Text className="text-gray-400 text-xs">
-                                          {getFormattedTime(item.created_at)}
-                                        </Text>
-                                        <Pressable>
-                                          <Text className="text-gray-400 text-xs font-semibold">Like</Text>
-                                        </Pressable>
-                                        <Pressable>
-                                          <Text className="text-gray-400 text-xs font-semibold">Reply</Text>
-                                        </Pressable>
-                                      </View>
+                                    <View className="flex-row mt-1 space-x-4 px-1 gap-2">
+                                      <Text className="text-gray-400 text-xs">
+                                        {getFormattedTime(item.created_at)}
+                                      </Text>
+                                      <Pressable>
+                                        <Text className="text-gray-400 text-xs font-semibold">Like</Text>
+                                      </Pressable>
+                                      <Pressable>
+                                        <Text className="text-gray-400 text-xs font-semibold">Reply</Text>
+                                      </Pressable>
                                     </View>
                                   </View>
-                                </Animated.View>
-                              )}
-                              contentContainerStyle={{ paddingBottom: 20 }}
-                              showsVerticalScrollIndicator={false}
-                            />
+                                </View>
+                              </Animated.View>
+                            )}
+                            contentContainerStyle={{ paddingBottom: 20 }}
+                            showsVerticalScrollIndicator={false}
+                          />
 
-                          ) : (
-                            <Text className="text-gray-400 italic">No comments yet.</Text>
-                          )}
+                        ) : (
+                          <Text className="text-gray-400 italic">No comments yet.</Text>
+                        )}
                       </View>
 
 

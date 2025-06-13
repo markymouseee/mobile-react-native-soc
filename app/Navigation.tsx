@@ -3,11 +3,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import ConfirmEmail from './(auth)/ConfirmEmail';
-import LoginScreen from './(auth)/login';
+import Login from './(auth)/login';
 import Register from './(auth)/register';
 import NewsFeedScreen from './(tabs)/AppNavigator';
+import EditProfile from './screens/_edit_profile';
 import Profile from './screens/_profile';
 import { ProfileSetup } from './screens/_profile_setup';
+import Settings from './screens/_settings';
 import type { RootStackParamList } from './TypeScript/types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -21,10 +23,12 @@ export default function Navigation() {
                 <>
                     <Stack.Screen name="NewsFeed" component={NewsFeedScreen} />
                     <Stack.Screen name="Profile" component={Profile} />
+                    <Stack.Screen name="EditProfile" component={EditProfile} />
+                    <Stack.Screen name="Settings" component={Settings} />
                 </>
             ) : (
                 <>
-                    <Stack.Screen name="Login" component={LoginScreen} />
+                    <Stack.Screen name="Login" component={Login} />
                     <Stack.Screen name="ConfirmEmail" component={ConfirmEmail} />
                     <Stack.Screen name="ProfileSetup" component={ProfileSetup} />
                     <Stack.Screen name="Register" component={Register} />

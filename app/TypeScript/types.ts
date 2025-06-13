@@ -4,5 +4,7 @@ export type RootStackParamList = {
   ProfileSetup: undefined;
   NewsFeed: undefined;
   Profile: undefined;
-  Register: undefined
+  Register: undefined;
+  EditProfile: undefined;
+  Settings: undefined;
 };

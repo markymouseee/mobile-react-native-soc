@@ -46,13 +46,16 @@ const UploadTabBarButton = (props: any) => {
         {...props}
         onPress={() => setModalVisible((prev) => !prev)}
         style={{
+          position: 'absolute',
+          bottom: 20,
+          left: '50%',
+          transform: [{ translateX: -30 }],
           width: 60,
           height: 60,
-          backgroundColor: "#8d03f2",
+          backgroundColor: '#8d03f2',
           borderRadius: 30,
-          justifyContent: "center",
-          alignItems: "center",
-          marginBottom: 40,
+          justifyContent: 'center',
+          alignItems: 'center',
         }}
       >
         <Feather name={modalVisible ? "x" : "plus"} size={26} color="#fff" />

@@ -13,6 +13,7 @@ import {
     RefreshControl,
     ScrollView,
     Text,
+    TouchableOpacity,
     TouchableWithoutFeedback,
     View,
 } from "react-native";
@@ -136,11 +137,7 @@ export default function Profile() {
     }
 
     const handleEditProfile = async () => {
-        await logout();
-        navigation.reset({
-            index: 0,
-            routes: [{ name: 'Login' }],
-        })
+       navigation.push('EditProfile');
     }
 
     return (
@@ -191,12 +188,12 @@ export default function Profile() {
                             {currentUserProfile.bio && <Text className="text-gray-400 text-sm mt-1">{currentUserProfile.bio}</Text>}
                         </View>
 
-                        <Pressable
+                        <TouchableOpacity
                             className="bg-[#1a1d2e] mt-4 py-2 rounded-md items-center"
                             onPress={handleEditProfile}
                         >
                             <Text className="text-white font-semibold">Edit Profile</Text>
-                        </Pressable>
+                        </TouchableOpacity>
                     </View>
 
                     <View className="border-t border-[#1a1d2e] mt-6 mb-2" />
