@@ -8,6 +8,7 @@ import Login from './(auth)/login';
 import Register from './(auth)/register';
 import NewsFeedScreen from './(tabs)/AppNavigator';
 import EditProfile from './screens/_edit_profile';
+import ExploreScreen from './screens/_explore_screen';
 import Profile from './screens/_profile';
 import { ProfileSetup } from './screens/_profile_setup';
 import Settings from './screens/_settings';
@@ -30,6 +31,7 @@ export default function Navigation() {
                         <Stack.Screen name="EditProfile" component={EditProfile} />
                         <Stack.Screen name="Settings" component={Settings} />
                         <Stack.Screen name="VisitProfile" component={VisitProfile} />
+                        <Stack.Screen name='ExploreScreen' component={ExploreScreen} />
                     </>
                 ) : (
                     <>

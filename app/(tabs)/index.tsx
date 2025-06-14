@@ -28,6 +28,7 @@ import {
   View
 } from "react-native";
 
+import EditPostModal from "@/components/EditPostModal";
 import { usePostContext } from "@/contexts/PostContext";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -94,7 +95,7 @@ export default function HomeScreen() {
   const [comment, setComment] = useState("");
   const [posts, setPosts] = useState<PostProps[]>([])
   const [refreshing, setRefreshing] = useState<boolean>(false);
-
+  const [postEditModal, setPostEditModal] = useState<any>(null);
   const [likeCounts, setLikeCounts] = useState<{ [key: string]: number }>({});
   const [comments, setComments] = useState<any>(null);
   const [postId, setPostId] = useState<any>(null);
@@ -102,7 +103,8 @@ export default function HomeScreen() {
   const [deletePostModal, setDeletePostModal] = useState(false);
   const { refreshFlag } = usePostContext();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-
+  const [editModalVisible, setEditModalVisible] = useState<boolean>(false);
+  
   setTimeout(() => {
     flatListRef.current?.scrollToEnd({ animated: true });
   }, 100);
@@ -305,7 +307,8 @@ export default function HomeScreen() {
   }
 
   const navigateToEdit = (post: any) => {
-    
+    setPostEditModal(post)
+    setEditModalVisible(true);
   }
 
 
@@ -427,6 +430,8 @@ export default function HomeScreen() {
               renderItem={renderPost}
               contentContainerStyle={{ paddingBottom: 100 }}
             />
+
+            <EditPostModal post={postEditModal} visible={editModalVisible} setShow={setEditModalVisible}/>
 
             <DeletePostModal show={deletePostModal} setShow={setDeletePostModal} postId={postId} />
 

@@ -1,26 +1,27 @@
 import { BASE_URL } from "@/api/url";
-import { RootStackParamList } from '@/app/TypeScript/types';
 import { usePostContext } from "@/contexts/PostContext";
 import { Feather, FontAwesome } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from "expo-image-picker";
 import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Image, Modal, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Image, Modal, Text, TextInput, TouchableOpacity, View } from "react-native";
+import SuccessErrorModal from "./SuccessErrorModal";
 
 interface userProps {
     id: number;
 }
 
 export default function UploadModal({ modalVisible, setModalVisible }: any) {
-    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
     const [title, setTitle] = useState("");
     const [body, setBody] = useState("");
     const [imageUri, setImageUri] = useState<string | null>(null);
     const [user, setUser] = useState<userProps>({
         id: 0,
     })
+
+    const [successErrorModalVisible, setSuccessErrorModalVisible] = useState(false);
+    const [successErrorModalMessage, setSuccessErrorModalMessage] = useState("");
+
 
     const { triggerRefresh } = usePostContext();
 
@@ -57,11 +58,20 @@ export default function UploadModal({ modalVisible, setModalVisible }: any) {
 
     const handleUpload = async () => {
         setIsLoading(true);
-        if (body === '') {
+        if (imageUri === null) {
+            setSuccessErrorModalMessage("Please select an image");
+            setSuccessErrorModalVisible(true);
             setIsLoading(false);
-            Alert.alert('Error', 'Post body cannot be empty');
             return;
         }
+
+        if (body === '') {
+            setIsLoading(false);
+            setSuccessErrorModalMessage("Please enter a caption");
+            setSuccessErrorModalVisible(true);
+            return;
+        }
+
         try {
             const formData = new FormData();
             formData.append('user_id', user.id.toString());
@@ -98,13 +108,10 @@ export default function UploadModal({ modalVisible, setModalVisible }: any) {
                 setBody('')
                 setImageUri(null)
                 triggerRefresh();
-                // navigation.reset({
-                //     index: 0,
-                //     routes: [{ name: 'NewsFeed' }],
-                // });
             } else {
                 setIsLoading(false);
-                console.error("Validation errors:", data.errors || data.message);
+                setSuccessErrorModalMessage(data.message);
+                setSuccessErrorModalVisible(true);
             }
         } catch (error) {
             console.error("Error uploading post:", error);
@@ -113,91 +120,94 @@ export default function UploadModal({ modalVisible, setModalVisible }: any) {
 
 
     return (
-        <Modal
-            animationType="slide"
-            transparent
-            visible={modalVisible}
-            onRequestClose={() => setModalVisible(false)}
-        >
-            <View className="flex-1 justify-end bg-black/50">
-                <View className="bg-[#1a1d2e] pt-3 pb-6 px-5 rounded-t-3xl">
+        <>
+            <SuccessErrorModal show={successErrorModalVisible} setShow={setSuccessErrorModalVisible} message={successErrorModalMessage} />
+            <Modal
+                animationType="slide"
+                transparent
+                visible={modalVisible}
+                onRequestClose={() => setModalVisible(false)}
+            >
+                <View className="flex-1 justify-end bg-black/50">
+                    <View className="bg-[#1a1d2e] pt-3 pb-6 px-5 rounded-t-3xl">
 
-                    <View className="flex-row justify-between items-center mb-3">
-                        <View className="w-10" />
-                        <Text className="text-white text-lg font-bold">Create Post</Text>
+                        <View className="flex-row justify-between items-center mb-3">
+                            <View className="w-10" />
+                            <Text className="text-white text-lg font-bold">Create Post</Text>
+                            <TouchableOpacity
+                                onPress={() => setModalVisible(false)}
+                                className="w-10 h-10 items-center justify-center"
+                            >
+                                <Feather name="x" size={24} color="white" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <View className="h-[1px] bg-[#2c2f46] mb-4" />
+
+                        {imageUri && (
+                            <Image
+                                source={{ uri: imageUri }}
+                                className="w-full h-56 rounded-xl mb-4"
+                                style={{
+                                    shadowColor: "#000",
+                                    shadowOpacity: 0.4,
+                                    shadowRadius: 8,
+                                    shadowOffset: { width: 0, height: 3 },
+                                }}
+                                resizeMode="cover"
+                            />
+                        )}
+
                         <TouchableOpacity
-                            onPress={() => setModalVisible(false)}
-                            className="w-10 h-10 items-center justify-center"
+                            onPress={pickImage}
+                            className="bg-[#6900af] py-3 rounded-full mb-4 flex-row items-center justify-center gap-2"
                         >
-                            <Feather name="x" size={24} color="white" />
+                            <FontAwesome name="camera" color="white" size={20} />
+                            <Text className="text-center text-gray-300 font-semibold text-base">
+                                {imageUri ? "Change Image" : "Upload Image"}
+                            </Text>
                         </TouchableOpacity>
-                    </View>
 
-                    <View className="h-[1px] bg-[#2c2f46] mb-4" />
 
-                    {imageUri && (
-                        <Image
-                            source={{ uri: imageUri }}
-                            className="w-full h-56 rounded-xl mb-4"
-                            style={{
-                                shadowColor: "#000",
-                                shadowOpacity: 0.4,
-                                shadowRadius: 8,
-                                shadowOffset: { width: 0, height: 3 },
-                            }}
-                            resizeMode="cover"
+                        <TextInput
+                            placeholder="Title (optional)"
+                            placeholderTextColor="#888"
+                            value={title}
+                            onChangeText={setTitle}
+                            className="bg-[#2a2e3e] text-white text-base rounded-xl px-4 py-3 mb-4"
                         />
-                    )}
 
-                    <TouchableOpacity
-                        onPress={pickImage}
-                        className="bg-[#6900af] py-3 rounded-full mb-4 flex-row items-center justify-center gap-2"
-                    >
-                        <FontAwesome name="camera" color="white" size={20} />
-                        <Text className="text-center text-gray-300 font-semibold text-base">
-                            {imageUri ? "Change Image" : "Upload Image"}
-                        </Text>
-                    </TouchableOpacity>
+                        <TextInput
+                            placeholder="What's on your mind?"
+                            placeholderTextColor="#888"
+                            value={body}
+                            onChangeText={setBody}
+                            multiline
+                            numberOfLines={3}
+                            className="bg-[#2a2e3e] text-white text-base rounded-xl px-4 py-6 mb-6"
+                            style={{ textAlignVertical: "top" }}
+                        />
 
+                        <View className="flex-row justify-between px-1">
+                            <TouchableOpacity onPress={() => setModalVisible(false)} className="bg-red-500 rounded-full px-4 py-2">
+                                <Text className="text-white font-poppins text-base">Cancel</Text>
+                            </TouchableOpacity>
 
-                    <TextInput
-                        placeholder="Title"
-                        placeholderTextColor="#888"
-                        value={title}
-                        onChangeText={setTitle}
-                        className="bg-[#2a2e3e] text-white text-base rounded-xl px-4 py-3 mb-4"
-                    />
-
-                    <TextInput
-                        placeholder="What's on your mind?"
-                        placeholderTextColor="#888"
-                        value={body}
-                        onChangeText={setBody}
-                        multiline
-                        numberOfLines={3}
-                        className="bg-[#2a2e3e] text-white text-base rounded-xl px-4 py-6 mb-6"
-                        style={{ textAlignVertical: "top" }}
-                    />
-
-                    <View className="flex-row justify-between px-1">
-                        <TouchableOpacity onPress={() => setModalVisible(false)} className="bg-red-500 rounded-full px-4 py-2">
-                            <Text className="text-white font-poppins text-base">Cancel</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            onPress={handleUpload}
-                            disabled={isLoading}
-                            className={`rounded-full px-4 py-2 ${isLoading ? 'bg-purple-400' : 'bg-purple-500'}`}
-                        >
-                            {isLoading ? (
-                                <ActivityIndicator color="#fff" />
-                            ) : (
-                                <Text className="font-poppins text-center text-white">Post</Text>
-                            )}
-                        </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={handleUpload}
+                                disabled={isLoading}
+                                className={`rounded-full px-4 py-2 ${isLoading ? 'bg-purple-400' : 'bg-purple-500'}`}
+                            >
+                                {isLoading ? (
+                                    <ActivityIndicator color="#fff" />
+                                ) : (
+                                    <Text className="font-poppins text-center text-white">Post</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </View>
-            </View>
-        </Modal>
+            </Modal>
+        </>
     );
 }

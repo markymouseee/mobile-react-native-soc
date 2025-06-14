@@ -8,4 +8,5 @@ export type RootStackParamList = {
   EditProfile: undefined;
   Settings: undefined;
   VisitProfile: { users: any };
+  ExploreScreen: undefined;
 };

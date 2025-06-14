@@ -9,19 +9,9 @@ import HomeScreen from "./index";
 
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import ExploreScreen from "../screens/_explore_screen";
 
 const Tab = createBottomTabNavigator();
-
-// Dummy components
-function ExploreScreen() {
-  return (
-    <View className="flex-1 justify-center items-center bg-[#0c1021]">
-      <Text className="text-white text-lg">Explore Screen</Text>
-    </View>
-  );
-}
-
-
 
 
 const UploadTabBarButton = (props: any) => {
