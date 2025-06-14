@@ -1,5 +1,4 @@
 import { BASE_URL } from "@/api/url";
-import { useAuth } from "@/contexts/AuthContext";
 import * as SecureStore from "expo-secure-store";
 import React, { useCallback, useEffect, useState } from "react";
 import {
@@ -19,7 +18,7 @@ import {
 } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../TypeScript/types';
 
@@ -35,9 +34,8 @@ interface Post {
 
 interface Followers {
     id: number;
-    user_id: number;
     follower_id: number;
-    following_id: number;
+    followed_user_id: number;
 }
 
 interface userProps {
@@ -49,6 +47,7 @@ interface userProps {
     bio: string;
     posts: Post[]; // ← array of posts
     followers: Followers[]; // ← array of followers
+    following?: Followers[]; // <-- new
 }
 export default function Profile() {
     const [user, setUser] = useState<userProps>({
@@ -74,8 +73,6 @@ export default function Profile() {
         followers: []
     });
 
-
-    const { logout } = useAuth();
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
 
@@ -100,11 +97,13 @@ export default function Profile() {
                 },
             });
 
+            const data = await response.json();
+
+            console.log(data);
+
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);
             }
-
-            const data = await response.json();
             setCurrentUserProfile(data);
 
         } catch (error) {
@@ -112,12 +111,13 @@ export default function Profile() {
         }
     };
 
-    useEffect(() => {
-        if (user?.id) {
-            loadProfile();
-        }
-    }, [user?.id]);
-
+    useFocusEffect(
+        useCallback(() => {
+            if (user?.id) {
+                loadProfile();
+            } // 👈 Refetch posts every time Home tab is focused
+        }, [user?.id])
+    );
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
@@ -137,7 +137,7 @@ export default function Profile() {
     }
 
     const handleEditProfile = async () => {
-       navigation.push('EditProfile');
+        navigation.navigate('EditProfile');
     }
 
     return (
@@ -164,20 +164,27 @@ export default function Profile() {
                                     <Text className="text-white font-bold text-lg">{currentUserProfile.posts.length}</Text>
                                     <Text className="text-gray-400 text-sm">Posts</Text>
                                 </View>
+                                {/* Followers */}
                                 <Pressable onPress={() => console.log("Followers Modal")}>
                                     <View className="items-center">
-                                        <Text className="text-white font-bold text-lg">{currentUserProfile.followers.length}</Text>
+                                        <Text className="text-white font-bold text-lg">
+                                            {currentUserProfile.followers?.length ?? 0}
+                                        </Text>
                                         <Text className="text-gray-400 text-sm">Followers</Text>
                                     </View>
                                 </Pressable>
+
                                 <Pressable onPress={() => console.log("Following Modal")}>
                                     <View className="items-center">
                                         <Text className="text-white font-bold text-lg">
-                                            {currentUserProfile.followers.filter(f => f.follower_id === currentUserProfile.id).length}
+                                            {currentUserProfile.following?.length ?? 0}
                                         </Text>
                                         <Text className="text-gray-400 text-sm">Following</Text>
                                     </View>
                                 </Pressable>
+
+
+
                             </View>
                         </View>
 
@@ -198,9 +205,9 @@ export default function Profile() {
 
                     <View className="border-t border-[#1a1d2e] mt-6 mb-2" />
 
-                    {currentUserProfile.posts.length > 0 ? (
+                    {currentUserProfile.posts.some((post: any) => post.image) ? (
                         <FlatList
-                            data={currentUserProfile.posts}
+                            data={currentUserProfile.posts.filter((post: any) => post.image)}
                             numColumns={3}
                             keyExtractor={(item) => item.id.toString()}
                             scrollEnabled={false}
@@ -208,17 +215,15 @@ export default function Profile() {
                             refreshing={refreshing}
                             onRefresh={onRefresh}
                             renderItem={({ item }: any) => (
-                                item.image && (
-                                    <Image
-                                        source={{ uri: `${BASE_URL}/images/Posts/` + item.image }}
-                                        style={{
-                                            width: imageSize,
-                                            height: imageSize,
-                                            borderWidth: 0.5,
-                                            borderColor: "#1a1d2e",
-                                        }}
-                                    />
-                                )
+                                <Image
+                                    source={{ uri: `${BASE_URL}/images/Posts/${item.image}` }}
+                                    style={{
+                                        width: imageSize,
+                                        height: imageSize,
+                                        borderWidth: 0.5,
+                                        borderColor: "#1a1d2e",
+                                    }}
+                                />
                             )}
                         />
                     ) : (
@@ -226,9 +231,10 @@ export default function Profile() {
                             <Text className="text-gray-400 font-poppins text-2xl">
                                 No posts yet
                             </Text>
-                            <Ionicons name="camera-outline" size={40} color={"gray"} />
+                            <Ionicons name="camera-outline" size={40} color="gray" />
                         </View>
                     )}
+
                 </ScrollView>
             </TouchableWithoutFeedback>
         </KeyboardAvoidingView>

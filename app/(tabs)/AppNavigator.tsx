@@ -2,9 +2,13 @@ import UploadModal from "@/components/UploadModal";
 import { Feather, FontAwesome, Ionicons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import React, { useState } from "react";
-import { Pressable, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 import Profile from "../screens/_profile";
+import { RootStackParamList } from '../TypeScript/types';
 import HomeScreen from "./index";
+
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 const Tab = createBottomTabNavigator();
 
@@ -17,26 +21,8 @@ function ExploreScreen() {
   );
 }
 
-const CustomHeader = () => (
-  <View className="bg-[#0c1021] pt-5 px-4 pb-2 border-b border-[#1a1d2e] flex-row items-center justify-between">
-    <View className="flex-row items-center space-x-2">
-      <Text
-        className="text-white text-4xl tracking-wide ml-2"
-        style={{ fontFamily: "Pacifico-Regular" }}
-      >
-        Vibio
-      </Text>
-    </View>
 
-    {/* Top Bar */}
-    <View className="ms-auto mt-3 flex-row gap-2">
-      <FontAwesome name="send" size={25} color="white" />
-      <Pressable onPress={() => console.log("Settings Pressed")}>
-        <Ionicons name="settings-outline" size={25} color="white" />
-      </Pressable>
-    </View>
-  </View>
-);
+
 
 const UploadTabBarButton = (props: any) => {
   const [modalVisible, setModalVisible] = useState<boolean>(false);
@@ -67,6 +53,28 @@ const UploadTabBarButton = (props: any) => {
 };
 
 export default function AppNavigator() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const CustomHeader = () => (
+    <View className="bg-[#0c1021] pt-5 px-4 pb-2 border-b border-[#1a1d2e] flex-row items-center justify-between">
+      <View className="flex-row items-center space-x-2">
+        <Text
+          className="text-white text-4xl tracking-wide ml-2"
+          style={{ fontFamily: "Pacifico-Regular" }}
+        >
+          Vibio
+        </Text>
+      </View>
+
+      {/* Top Bar */}
+      <View className="ms-auto mt-3 flex-row gap-2">
+        <FontAwesome name="send" size={25} color="white" />
+        <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
+          <Ionicons name="settings-outline" size={25} color="white" />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
   return (
     <Tab.Navigator
       screenOptions={{

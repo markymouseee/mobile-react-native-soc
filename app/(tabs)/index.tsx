@@ -1,4 +1,6 @@
 import { BASE_URL } from "@/api/url";
+import DeletePostModal from "@/components/DeletePostModal";
+import PostOptions from "@/components/PostOptions";
 import { Feather, FontAwesome, Ionicons } from "@expo/vector-icons";
 import dayjs from 'dayjs';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
@@ -20,10 +22,16 @@ import {
   ScrollView,
   Text,
   TextInput,
+  TouchableOpacity,
   TouchableWithoutFeedback,
   UIManager,
   View
 } from "react-native";
+
+import { usePostContext } from "@/contexts/PostContext";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../TypeScript/types';
 
 dayjs.extend(relativeTime);
 dayjs.extend(localizedFormat);
@@ -91,6 +99,9 @@ export default function HomeScreen() {
   const [comments, setComments] = useState<any>(null);
   const [postId, setPostId] = useState<any>(null);
   const flatListRef = useRef<FlatList<any>>(null);
+  const [deletePostModal, setDeletePostModal] = useState(false);
+  const { refreshFlag } = usePostContext();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   setTimeout(() => {
     flatListRef.current?.scrollToEnd({ animated: true });
@@ -103,6 +114,16 @@ export default function HomeScreen() {
         : [...prev, postId]
     );
   };
+
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      const id = await getCurrentUserId(); // Implement this function to get ID from storage/auth
+      setCurrentUserId(id);
+    };
+    fetchCurrentUser();
+  }, []);
 
   const openCommentModal = (post: any) => {
     const postIdStr = post.id.toString();
@@ -128,13 +149,13 @@ export default function HomeScreen() {
         counts[post.id.toString()] = post.likes.length;
       });
       setLikeCounts(counts);
-      const shuffled = data.sort(() => Math.random() - 0.5);
 
-      setPosts(shuffled);
+      setPosts(data);
     } catch (error) {
       console.error("Fetch error:", error);
     }
   };
+
 
   const getCurrentUserId = async () => {
     const user = await SecureStore.getItem('userData'); // or SecureStore.getItemAsync
@@ -239,6 +260,8 @@ export default function HomeScreen() {
     }
   }
 
+
+
   useEffect(() => {
     getLikesForPosts();
   }, [])
@@ -253,9 +276,15 @@ export default function HomeScreen() {
     }, 2000)
   }, []);
 
+  useFocusEffect(
+    useCallback(() => {
+      fetchPosts(); // 👈 Refetch posts every time Home tab is focused
+    }, [])
+  );
+
   useEffect(() => {
-    fetchPosts();
-  }, []);
+    fetchPosts(); // Will re-run when refreshFlag changes
+  }, [refreshFlag]);
 
   useEffect(() => {
     const backAction = () => {
@@ -270,23 +299,47 @@ export default function HomeScreen() {
     return () => backHandler.remove();
   }, [commentModal]);
 
+  const handleDelete = async (id: any) => {
+    setDeletePostModal(true);
+    setPostId(id);
+  }
+
+  const navigateToEdit = (post: any) => {
+    
+  }
+
 
   const renderPost = ({ item }: { item: PostProps }) => (
     <View className="bg-[#1a1d2e] rounded-xl py-4 px-4 mb-5">
       <View className="flex-row items-center mb-3">
-        <Image
-          source={{ uri: item.users.profile_picture ? `${BASE_URL}/images/Profile/` + item.users.profile_picture : "https://img.freepik.com/premium-vector/default-avatar-profile-icon-social-media-user-image-gray-avatar-icon-blank-profile-silhouette-vector-illustration_561158-3383.jpg?w=360" }}
-          className="w-10 h-10 rounded-full mr-2"
+        <TouchableOpacity
+          disabled={item.users.id === currentUserId}
+          onPress={() => navigation.navigate('VisitProfile', { users: item.users })}
+
+          className="flex-row"
+        >
+          <Image
+            source={{
+              uri: item.users.profile_picture
+                ? `${BASE_URL}/images/Profile/` + item.users.profile_picture
+                : "https://img.freepik.com/premium-vector/default-avatar-profile-icon-social-media-user-image-gray-avatar-icon-blank-profile-silhouette-vector-illustration_561158-3383.jpg?w=360",
+            }}
+            className="w-10 h-10 rounded-full mr-2"
+          />
+
+          <View>
+            <Text className={`${item.users.id === currentUserId ? "text-white" : "text-green-300"} font-semibold text-base`}>{item.users.name}</Text>
+            <Text className="text-[#9ca3af] text-xs">
+              {getFormattedTime(item.created_at)}
+            </Text>
+          </View>
+        </TouchableOpacity>
+        <PostOptions
+          post={item}
+          currentUserId={currentUserId}
+          onEdit={() => navigateToEdit(item)}
+          onDelete={() => handleDelete(item.id)}
         />
-        <View>
-          <Text className="text-white font-semibold text-base">{item.users.name}</Text>
-          <Text className="text-[#9ca3af] text-xs">
-            {getFormattedTime(item.created_at)}
-          </Text>
-        </View>
-        <View className="ms-auto">
-          <FontAwesome name="ellipsis-h" size={18} color="#9ca3af" />
-        </View>
       </View>
 
       {item.title && (
@@ -374,6 +427,8 @@ export default function HomeScreen() {
               renderItem={renderPost}
               contentContainerStyle={{ paddingBottom: 100 }}
             />
+
+            <DeletePostModal show={deletePostModal} setShow={setDeletePostModal} postId={postId} />
 
             <Modal visible={commentModal} animationType="slide" transparent>
               <TouchableWithoutFeedback onPress={() => setCommentModal(false)}>

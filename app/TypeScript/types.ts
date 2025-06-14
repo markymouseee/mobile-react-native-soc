@@ -7,4 +7,5 @@ export type RootStackParamList = {
   Register: undefined;
   EditProfile: undefined;
   Settings: undefined;
+  VisitProfile: { users: any };
 };

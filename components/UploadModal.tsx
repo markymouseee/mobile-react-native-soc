@@ -1,12 +1,13 @@
 import { BASE_URL } from "@/api/url";
 import { RootStackParamList } from '@/app/TypeScript/types';
+import { usePostContext } from "@/contexts/PostContext";
 import { Feather, FontAwesome } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from "expo-image-picker";
 import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useState } from "react";
-import { Alert, Image, Modal, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Image, Modal, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 interface userProps {
     id: number;
@@ -20,6 +21,10 @@ export default function UploadModal({ modalVisible, setModalVisible }: any) {
     const [user, setUser] = useState<userProps>({
         id: 0,
     })
+
+    const { triggerRefresh } = usePostContext();
+
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         const loadUserData = async () => {
@@ -51,7 +56,9 @@ export default function UploadModal({ modalVisible, setModalVisible }: any) {
     };
 
     const handleUpload = async () => {
+        setIsLoading(true);
         if (body === '') {
+            setIsLoading(false);
             Alert.alert('Error', 'Post body cannot be empty');
             return;
         }
@@ -84,8 +91,19 @@ export default function UploadModal({ modalVisible, setModalVisible }: any) {
             const data = await response.json();
 
             if (response.ok) {
-                navigation.push('NewsFeed');
+                setIsLoading(false);
+                await fetch(`${BASE_URL}/api/show-posts`)
+                setModalVisible(false)
+                setTitle('')
+                setBody('')
+                setImageUri(null)
+                triggerRefresh();
+                // navigation.reset({
+                //     index: 0,
+                //     routes: [{ name: 'NewsFeed' }],
+                // });
             } else {
+                setIsLoading(false);
                 console.error("Validation errors:", data.errors || data.message);
             }
         } catch (error) {
@@ -162,17 +180,20 @@ export default function UploadModal({ modalVisible, setModalVisible }: any) {
                     />
 
                     <View className="flex-row justify-between px-1">
-                        <TouchableOpacity onPress={() => setModalVisible(false)}>
-                            <Text className="text-red-400 font-medium text-base">Cancel</Text>
+                        <TouchableOpacity onPress={() => setModalVisible(false)} className="bg-red-500 rounded-full px-4 py-2">
+                            <Text className="text-white font-poppins text-base">Cancel</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity onPress={handleUpload} >
-                            <Text
-                                className="font-semibold text-base text-purple-500"
-
-                            >
-                                Post
-                            </Text>
+                        <TouchableOpacity
+                            onPress={handleUpload}
+                            disabled={isLoading}
+                            className={`rounded-full px-4 py-2 ${isLoading ? 'bg-purple-400' : 'bg-purple-500'}`}
+                        >
+                            {isLoading ? (
+                                <ActivityIndicator color="#fff" />
+                            ) : (
+                                <Text className="font-poppins text-center text-white">Post</Text>
+                            )}
                         </TouchableOpacity>
                     </View>
                 </View>
